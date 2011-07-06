@@ -14,7 +14,7 @@
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU General Public License
- * along with Color Picker Threshold. If not, see <http://www.gnu.org/licenses/>.
+ * along with FlickrImageRetrieve. If not, see <http://www.gnu.org/licenses/>.
  */
 
 package plugins.nherve.flickr.tools;
