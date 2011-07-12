@@ -60,7 +60,6 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 	public final static String COPYRIGHT_HTML = "Copyright 2011 Nicolas HERVE";
 	private static String HELP = "<html>" + "<p align=\"center\"><b>" + FULL_PLUGIN_NAME + "</b></p>" + "<p align=\"center\"><b>" + NherveToolbox.DEV_NAME_HTML + "</b></p>" + "<p align=\"center\"><a href=\"http://www.herve.name/pmwiki.php/Main/FlickrImageRetrieve\">Online help is available</a></p>" + "<p align=\"center\"><b>" + COPYRIGHT_HTML + "</b></p>" + "<hr/>" + "<p>" + PLUGIN_NAME + NherveToolbox.LICENCE_HTML + "</p>" + "<p>" + NherveToolbox.LICENCE_HTMLLINK + "</p>" + "</html>";
 	private final static String APP_KEY = "70331e00a63dc50a87f0a7a40e1242ad";
-	private final static String PREFERENCES_NODE = "icy/plugins/nherve/flickr/FlickrImageRetrieve";
 	private IcyFrame frame;
 	private JButton btGrabRandom;
 	private JButton btGrabByTag;
@@ -235,7 +234,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 
 		JPanel mainPanel = GuiUtil.generatePanel();
 		frame = GuiUtil.generateTitleFrame(FULL_PLUGIN_NAME, mainPanel, new Dimension(400, 100), false, true, false, true);
-		new WindowPositionSaver(frame, PREFERENCES_NODE, new Point(0, 0));
+		new WindowPositionSaver(frame, getClass().getName(), new Point(0, 0));
 
 		// Random
 		ButtonGroup bgRandomSource = new ButtonGroup();
