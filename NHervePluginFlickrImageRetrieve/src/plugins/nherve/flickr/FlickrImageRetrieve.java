@@ -20,12 +20,9 @@
 package plugins.nherve.flickr;
 
 import icy.gui.component.ComponentUtil;
-import icy.gui.frame.IcyFrame;
 import icy.gui.util.GuiUtil;
-import icy.gui.util.WindowPositionSaver;
 
 import java.awt.Dimension;
-import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -54,13 +51,9 @@ import plugins.nherve.toolbox.plugin.SingletonPlugin;
  * @author Nicolas HERVE - n.herve@laposte.net
  */
 public class FlickrImageRetrieve extends SingletonPlugin implements ActionListener, FlickrWorkerListener {
-	private final static String PLUGIN_NAME = "FlickrImageRetrieve";
-	private final static String PLUGIN_VERSION = "1.0.2";
-	private final static String FULL_PLUGIN_NAME = PLUGIN_NAME + " V" + PLUGIN_VERSION;
 	public final static String COPYRIGHT_HTML = "Copyright 2011 Nicolas HERVE";
-	private static String HELP = "<html>" + "<p align=\"center\"><b>" + FULL_PLUGIN_NAME + "</b></p>" + "<p align=\"center\"><b>" + NherveToolbox.DEV_NAME_HTML + "</b></p>" + "<p align=\"center\"><a href=\"http://www.herve.name/pmwiki.php/Main/FlickrImageRetrieve\">Online help is available</a></p>" + "<p align=\"center\"><b>" + COPYRIGHT_HTML + "</b></p>" + "<hr/>" + "<p>" + PLUGIN_NAME + NherveToolbox.LICENCE_HTML + "</p>" + "<p>" + NherveToolbox.LICENCE_HTMLLINK + "</p>" + "</html>";
+	private static String HELP = "<html>" + "<p align=\"center\"><b>" + HelpWindow.TAG_FULL_PLUGIN_NAME + "</b></p>" + "<p align=\"center\"><b>" + NherveToolbox.DEV_NAME_HTML + "</b></p>" + "<p align=\"center\"><a href=\"http://www.herve.name/pmwiki.php/Main/FlickrImageRetrieve\">Online help is available</a></p>" + "<p align=\"center\"><b>" + COPYRIGHT_HTML + "</b></p>" + "<hr/>" + "<p>" + HelpWindow.TAG_PLUGIN_NAME + NherveToolbox.LICENCE_HTML + "</p>" + "<p>" + NherveToolbox.LICENCE_HTMLLINK + "</p>" + "</html>";
 	private final static String APP_KEY = "70331e00a63dc50a87f0a7a40e1242ad";
-	private IcyFrame frame;
 	private JButton btGrabRandom;
 	private JButton btGrabByTag;
 	private JTextField tfTag;
@@ -73,7 +66,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 	private JCheckBox cbSingleImage;
 
 	private FlickrFrontend flickr;
-	private FlickrThumbnailProvider provider;
+//	private FlickrThumbnailProvider provider;
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -90,7 +83,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 			}
 
 			if (b == btHelp) {
-				new HelpWindow(PLUGIN_NAME, HELP, 400, 300, frame);
+				openHelpWindow(HELP, 400, 300);
 				return;
 			}
 
@@ -108,29 +101,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 		}
 	}
 
-	private void grab(int type, String tags) {
-		if (cbSingleImage.isSelected()) {
-			btGrabByTag.setEnabled(false);
-			btGrabRandom.setEnabled(false);
-			pbProgress.setIndeterminate(true);
-			pbProgress.setValue(0);
-			pbProgress.setStringPainted(true);
-
-			FlickrWorker worker = new FlickrWorker(flickr, this);
-			worker.setType(type);
-			if (type == FlickrWorker.TYPE_TAGS) {
-				worker.setTags(tags);
-			}
-			worker.addListener(this);
-
-			Thread t = new Thread(worker);
-			t.start();
-		} else {
-			grabGrid(type, tags);
-		}
-	}
-
-	private void grabGrid(int type, String tags) {
+	public void display(FlickrImage img) {
 		btGrabByTag.setEnabled(false);
 		btGrabRandom.setEnabled(false);
 		pbProgress.setIndeterminate(true);
@@ -138,18 +109,8 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 		pbProgress.setStringPainted(true);
 
 		FlickrWorker worker = new FlickrWorker(flickr, this);
-		int mtg = 100;
-		try {
-			mtg = Integer.parseInt(tfMaxToGrab.getText());
-		} catch (NumberFormatException e) {
-			mtg = 100;
-			displayMessage(e.getMessage());
-		}
-		worker.setMaxToGrab(mtg);
-		worker.setType(type);
-		if (type == FlickrWorker.TYPE_TAGS) {
-			worker.setTags(tags);
-		}
+		worker.setType(FlickrWorker.TYPE_IMAGE);
+		worker.setImage(img);
 		worker.addListener(this);
 
 		Thread t = new Thread(worker);
@@ -157,84 +118,16 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 	}
 
 	@Override
-	public void notifyProcessEnded(FlickrWorker w) {
-		if (w.getMaxToGrab() > 1) {
-			if (w.getImages() != null) {
-				FlickrImageGrid grid = new FlickrImageGrid();
-				switch (w.getType()) {
-				case FlickrWorker.TYPE_RECENT:
-					grid.setTitle("FiR - recent uploads");
-					break;
-				case FlickrWorker.TYPE_INTERESTINGNESS:
-					grid.setTitle("FiR - interestingness");
-					break;
-				case FlickrWorker.TYPE_TAGS:
-					grid.setTitle("FiR - " + w.getTags());
-					break;
-				default:
-					grid.setTitle("FiR");
-					break;
-				}
-				
-				grid.setImages(w.getImages());
-				grid.startInterface(frame);
-
-				for (final FlickrImage i : grid.getImages()) {
-					i.setPlugin(this);
-//					new Thread(new Runnable() {
-//
-//						@Override
-//						public void run() {
-//							try {
-//								i.setInternal(flickr.loadImageThumbnail(i, null));
-//							} catch (final FlickrException e) {
-//								i.setInternal(null);
-//								i.removedFromGrid();
-//								ThreadUtil.invokeLater(new Runnable() {
-//									@Override
-//									public void run() {
-//										displayMessage(e.getClass().getName() + " : " + e.getMessage());
-//									}
-//								});
-//							}
-//						}
-//					}).start();
-				}
-			}
-		}
-
-		btGrabByTag.setEnabled(true);
-		btGrabRandom.setEnabled(true);
-		pbProgress.setIndeterminate(false);
-		pbProgress.setStringPainted(false);
-		pbProgress.setValue(0);
-		pbProgress.setString(null);
+	public void displayMessage(String message) {
+		taLog.append(message + "\n");
 	}
 
 	@Override
-	public void notifyNewProgressionStep(String step) {
-		pbProgress.setIndeterminate(true);
-		pbProgress.setString(step);
-	}
-
-	@Override
-	public boolean notifyProgress(double position, double length) {
-		pbProgress.setIndeterminate(false);
-		pbProgress.setMaximum((int) length);
-		pbProgress.setValue((int) position);
-		return true;
-	}
-
-	@Override
-	public void startInterface() {
+	public void fillInterface(JPanel mainPanel) {
 		setUIDisplayEnabled(true);
 
 		flickr = new FlickrFrontend(APP_KEY);
-		provider = new FlickrThumbnailProvider(flickr);
-
-		JPanel mainPanel = GuiUtil.generatePanel();
-		frame = GuiUtil.generateTitleFrame(FULL_PLUGIN_NAME, mainPanel, new Dimension(400, 100), false, true, false, true);
-		new WindowPositionSaver(frame, getClass().getName(), new Point(0, 0));
+		new FlickrThumbnailProvider(flickr);
 
 		// Random
 		ButtonGroup bgRandomSource = new ButtonGroup();
@@ -290,28 +183,36 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 		int spacing = 10;
 		JPanel myPanel = GuiUtil.createPageBoxPanel(Box.createVerticalGlue(), randomPanel, Box.createVerticalStrut(spacing), searchPanel, Box.createVerticalStrut(spacing), progressPanel, Box.createVerticalStrut(spacing), taLogScroll, Box.createVerticalGlue());
 		mainPanel.add(myPanel);
-
-		frame.setVisible(true);
-		frame.addFrameListener(this);
-		frame.pack();
-		addIcyFrame(frame);
-		frame.requestFocus();
 	}
 
 	@Override
-	public void sequenceWillChange() {
+	public Dimension getDefaultFrameDimension() {
+		return null;
 	}
 
-	@Override
-	public void sequenceHasChanged() {
-	}
+	private void grab(int type, String tags) {
+		if (cbSingleImage.isSelected()) {
+			btGrabByTag.setEnabled(false);
+			btGrabRandom.setEnabled(false);
+			pbProgress.setIndeterminate(true);
+			pbProgress.setValue(0);
+			pbProgress.setStringPainted(true);
 
-	@Override
-	public void displayMessage(String message) {
-		taLog.append(message + "\n");
-	}
+			FlickrWorker worker = new FlickrWorker(flickr, this);
+			worker.setType(type);
+			if (type == FlickrWorker.TYPE_TAGS) {
+				worker.setTags(tags);
+			}
+			worker.addListener(this);
 
-	public void display(FlickrImage img) {
+			Thread t = new Thread(worker);
+			t.start();
+		} else {
+			grabGrid(type, tags);
+		}
+	}
+	
+	private void grabGrid(int type, String tags) {
 		btGrabByTag.setEnabled(false);
 		btGrabRandom.setEnabled(false);
 		pbProgress.setIndeterminate(true);
@@ -319,8 +220,18 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 		pbProgress.setStringPainted(true);
 
 		FlickrWorker worker = new FlickrWorker(flickr, this);
-		worker.setType(FlickrWorker.TYPE_IMAGE);
-		worker.setImage(img);
+		int mtg = 100;
+		try {
+			mtg = Integer.parseInt(tfMaxToGrab.getText());
+		} catch (NumberFormatException e) {
+			mtg = 100;
+			displayMessage(e.getMessage());
+		}
+		worker.setMaxToGrab(mtg);
+		worker.setType(type);
+		if (type == FlickrWorker.TYPE_TAGS) {
+			worker.setTags(tags);
+		}
 		worker.addListener(this);
 
 		Thread t = new Thread(worker);
@@ -329,6 +240,83 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 
 	public boolean isGrabEnabled() {
 		return btGrabRandom.isEnabled();
+	}
+
+	@Override
+	public void notifyNewProgressionStep(String step) {
+		pbProgress.setIndeterminate(true);
+		pbProgress.setString(step);
+	}
+
+	@Override
+	public void notifyProcessEnded(FlickrWorker w) {
+		if (w.getMaxToGrab() > 1) {
+			if (w.getImages() != null) {
+				FlickrImageGrid grid = new FlickrImageGrid();
+				switch (w.getType()) {
+				case FlickrWorker.TYPE_RECENT:
+					grid.setTitle("FiR - recent uploads");
+					break;
+				case FlickrWorker.TYPE_INTERESTINGNESS:
+					grid.setTitle("FiR - interestingness");
+					break;
+				case FlickrWorker.TYPE_TAGS:
+					grid.setTitle("FiR - " + w.getTags());
+					break;
+				default:
+					grid.setTitle("FiR");
+					break;
+				}
+				
+				grid.setImages(w.getImages());
+				grid.startInterface(getFrame());
+
+				for (final FlickrImage i : grid.getImages()) {
+					i.setPlugin(this);
+//					new Thread(new Runnable() {
+//
+//						@Override
+//						public void run() {
+//							try {
+//								i.setInternal(flickr.loadImageThumbnail(i, null));
+//							} catch (final FlickrException e) {
+//								i.setInternal(null);
+//								i.removedFromGrid();
+//								ThreadUtil.invokeLater(new Runnable() {
+//									@Override
+//									public void run() {
+//										displayMessage(e.getClass().getName() + " : " + e.getMessage());
+//									}
+//								});
+//							}
+//						}
+//					}).start();
+				}
+			}
+		}
+
+		btGrabByTag.setEnabled(true);
+		btGrabRandom.setEnabled(true);
+		pbProgress.setIndeterminate(false);
+		pbProgress.setStringPainted(false);
+		pbProgress.setValue(0);
+		pbProgress.setString(null);
+	}
+
+	@Override
+	public boolean notifyProgress(double position, double length) {
+		pbProgress.setIndeterminate(false);
+		pbProgress.setMaximum((int) length);
+		pbProgress.setValue((int) position);
+		return true;
+	}
+
+	@Override
+	public void sequenceHasChanged() {
+	}
+
+	@Override
+	public void sequenceWillChange() {
 	}
 
 	@Override
