@@ -43,6 +43,7 @@ import javax.swing.border.TitledBorder;
 import plugins.nherve.flickr.tools.FlickrFrontend;
 import plugins.nherve.flickr.tools.FlickrImage;
 import plugins.nherve.toolbox.NherveToolbox;
+import plugins.nherve.toolbox.plugin.HeadlessReadyComponent;
 import plugins.nherve.toolbox.plugin.HelpWindow;
 import plugins.nherve.toolbox.plugin.SingletonPlugin;
 
@@ -50,7 +51,9 @@ import plugins.nherve.toolbox.plugin.SingletonPlugin;
  * 
  * @author Nicolas HERVE - n.herve@laposte.net
  */
-public class FlickrImageRetrieve extends SingletonPlugin implements ActionListener, FlickrWorkerListener {
+public class FlickrImageRetrieve extends SingletonPlugin implements ActionListener, FlickrWorkerListener, HeadlessReadyComponent {
+	private final static String VERSION = "1.2.1.0";
+	
 	public final static String COPYRIGHT_HTML = "Copyright 2011 Nicolas HERVE";
 	private static String HELP = "<html>" + "<p align=\"center\"><b>" + HelpWindow.getTagFullPluginName() + "</b></p>" + "<p align=\"center\"><b>" + NherveToolbox.getDevNameHtml() + "</b></p>" + "<p align=\"center\"><a href=\"http://www.herve.name/pmwiki.php/Main/FlickrImageRetrieve\">Online help is available</a></p>" + "<p align=\"center\"><b>" + COPYRIGHT_HTML + "</b></p>" + "<hr/>" + "<p>" + HelpWindow.getTagPluginName() + NherveToolbox.getLicenceHtml() + "</p>" + "<p>" + NherveToolbox.getLicenceHtmllink() + "</p>" + "</html>";
 	private final static String APP_KEY = "70331e00a63dc50a87f0a7a40e1242ad";
@@ -66,7 +69,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 	private JCheckBox cbSingleImage;
 
 	private FlickrFrontend flickr;
-//	private FlickrThumbnailProvider provider;
+	private FlickrThumbnailProvider provider;
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -127,7 +130,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 		setUIDisplayEnabled(true);
 
 		flickr = new FlickrFrontend(APP_KEY);
-		new FlickrThumbnailProvider(flickr);
+		provider = new FlickrThumbnailProvider(flickr);
 
 		// Random
 		ButtonGroup bgRandomSource = new ButtonGroup();
@@ -174,7 +177,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 		btHelp.setToolTipText("About this plugin");
 		btHelp.addActionListener(this);
 		tfMaxToGrab = new JTextField("100");
-		ComponentUtil.setFixedWidth(tfMaxToGrab, 50);
+		ComponentUtil.setFixedSize(tfMaxToGrab, new Dimension(50, 25));
 		cbSingleImage = new JCheckBox("Single");
 		pbProgress = new JProgressBar();
 		JPanel progressPanel = GuiUtil.createLineBoxPanel(btHelp, tfMaxToGrab, cbSingleImage, pbProgress);
@@ -187,7 +190,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 
 	@Override
 	public Dimension getDefaultFrameDimension() {
-		return null;
+		return new Dimension(500, 450);
 	}
 
 	private void grab(int type, String tags) {
@@ -252,7 +255,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 	public void notifyProcessEnded(FlickrWorker w) {
 		if (w.getMaxToGrab() > 1) {
 			if (w.getImages() != null) {
-				FlickrImageGrid grid = new FlickrImageGrid();
+				FlickrImageGrid grid = new FlickrImageGrid(this);
 				switch (w.getType()) {
 				case FlickrWorker.TYPE_RECENT:
 					grid.setTitle("FiR - recent uploads");
@@ -321,7 +324,13 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 
 	@Override
 	public void stopInterface() {
-		
+		provider.close();
+		provider = null;
+	}
+	
+	@Override
+	public String getDefaultVersion() {
+		return VERSION;
 	}
 
 }

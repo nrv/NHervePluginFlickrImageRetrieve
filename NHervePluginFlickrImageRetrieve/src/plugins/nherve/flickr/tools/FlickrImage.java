@@ -154,7 +154,7 @@ public class FlickrImage extends GridCell {
 		if (e.getButton() == MouseEvent.BUTTON1) {
 			e.consume();
 			if (plugin != null) {
-				if (plugin.isGrabEnabled()) {
+				if (!plugin.isRunningHeadless() && plugin.isGrabEnabled()) {
 					plugin.display(this);
 				}
 			}

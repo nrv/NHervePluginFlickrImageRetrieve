@@ -22,9 +22,16 @@ package plugins.nherve.flickr;
 import icy.gui.frame.IcyFrame;
 import icy.gui.frame.IcyFrameEvent;
 import icy.gui.frame.IcyFrameListener;
+import icy.gui.util.WindowPositionSaver;
+
+import java.awt.Dimension;
+import java.awt.Point;
+
 import plugins.nherve.flickr.tools.FlickrImage;
 import plugins.nherve.toolbox.genericgrid.GridCellCollection;
 import plugins.nherve.toolbox.genericgrid.GridPanel;
+import plugins.nherve.toolbox.plugin.HeadlessReadyComponent;
+import plugins.nherve.toolbox.plugin.MyFrame;
 
 public class FlickrImageGrid extends IcyFrame implements IcyFrameListener {
 	private static final int THUMB_SIZE = 105;
@@ -32,25 +39,40 @@ public class FlickrImageGrid extends IcyFrame implements IcyFrameListener {
 	private GridCellCollection<FlickrImage> images;
 	private GridPanel<FlickrImage> igp;
 
-	public FlickrImageGrid() {
+	private HeadlessReadyComponent parent;
+	
+	public FlickrImageGrid(HeadlessReadyComponent parent) {
 		super();
+		this.parent = parent;
 	}
 
-	public void startInterface(IcyFrame parentFrame) {
+	public void startInterface(MyFrame parentFrame) {
 		parentFrame.addFrameListener(this);
 
+		addToMainDesktopPane();
+		
 		igp = new GridPanel<FlickrImage>(THUMB_SIZE, THUMB_SPACING, false, false);
 		add(igp);
 
 		igp.setCells(images);
 
 		setResizable(true);
-		int initialSize = 5 * (THUMB_SIZE + THUMB_SPACING) + 75;
-		setSize(initialSize, initialSize);
 		setClosable(true);
+		
+		if (parent.isRunningHeadless()) {
+			externalize();
+		}
+		
+		new WindowPositionSaver(this, getClass().getName(), new Point(0, 0), new Dimension(400, 400));
+		
 		setVisible(true);
-		center();
-		addToMainDesktopPane();
+
+		if (parent.isRunningHeadless()) {
+			externalize();
+			setSize(getSize().width + 1, getSize().height + 1);
+			setSize(getSize().width - 1, getSize().height - 1);
+		}
+		
 		requestFocus();
 	}
 
