@@ -123,6 +123,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 	@Override
 	public void displayMessage(String message) {
 		taLog.append(message + "\n");
+		taLog.setCaretPosition(taLog.getDocument().getLength());
 	}
 
 	@Override
