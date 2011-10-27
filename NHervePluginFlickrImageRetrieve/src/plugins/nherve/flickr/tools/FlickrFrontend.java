@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Nicolas HervŽ.
+ * Copyright 2011 Nicolas Hervï¿½.
  * 
  * This file is part of FlickrImageRetrieve, which is an ICY plugin.
  * 
@@ -35,6 +35,7 @@ import java.util.Random;
 import java.util.StringTokenizer;
 
 import plugins.nherve.flickr.FlickrThumbnailProvider;
+import plugins.nherve.toolbox.Algorithm;
 import plugins.nherve.toolbox.genericgrid.GridCellCollection;
 
 /**
@@ -232,7 +233,7 @@ public class FlickrFrontend {
 
 	private void log(String message) {
 		if (isDebug()) {
-			System.out.println("[Flickr] " + message);
+			Algorithm.out("[Flickr] " + message);
 		}
 	}
 
