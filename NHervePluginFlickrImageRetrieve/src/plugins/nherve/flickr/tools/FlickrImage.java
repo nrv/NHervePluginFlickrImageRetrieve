@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Nicolas HervŽ.
+ * Copyright 2011 Nicolas Hervï¿½.
  * 
  * This file is part of FlickrImageRetrieve, which is an ICY plugin.
  * 
@@ -35,14 +35,16 @@ import plugins.nherve.toolbox.genericgrid.GridCell;
 public class FlickrImage extends GridCell {
 	private static final long serialVersionUID = 2168885531941222351L;
 	private String farm;
-	private String server;
 	private String id;
-	private String secret;
+	private FlickrLicense license;
+	private String licenseId;
 	private String owner;
-	private String title;
-	private boolean sizesDone;
-	private Map<String, FlickrImageSize> sizes;
 	private FlickrImageRetrieve plugin;
+	private String secret;
+	private String server;
+	private Map<String, FlickrImageSize> sizes;
+	private boolean sizesDone;
+	private String title;
 
 	public FlickrImage() {
 		super();
@@ -52,16 +54,8 @@ public class FlickrImage extends GridCell {
 		setPlugin(null);
 	}
 
-	public String getFarm() {
-		return farm;
-	}
-
 	void addAvailableSize(FlickrImageSize s) {
 		sizes.put(s.getLabel(), s);
-	}
-
-	public String getId() {
-		return id;
 	}
 
 	String getBiggestAvailableSize() {
@@ -77,6 +71,14 @@ public class FlickrImage extends GridCell {
 		}
 
 		return maxSize;
+	}
+
+	public String getFarm() {
+		return farm;
+	}
+
+	public String getId() {
+		return id;
 	}
 
 	URL getImageURL(String size) throws FlickrException {
@@ -100,6 +102,14 @@ public class FlickrImage extends GridCell {
 		}
 	}
 
+	public FlickrLicense getLicense() {
+		return license;
+	}
+
+	public String getLicenseId() {
+		return licenseId;
+	}
+
 	public String getOwner() {
 		return owner;
 	}
@@ -116,37 +126,8 @@ public class FlickrImage extends GridCell {
 		return title;
 	}
 
-	void setFarm(String farm) {
-		this.farm = farm;
-	}
-
-	void setId(String id) {
-		this.id = id;
-	}
-
-	void setOwner(String owner) {
-		this.owner = owner;
-	}
-
-	void setSecret(String secret) {
-		this.secret = secret;
-	}
-
-	void setServer(String server) {
-		this.server = server;
-	}
-
-	void setTitle(String title) {
-		this.title = title;
-		setName(title);
-	}
-
 	public boolean isSizesDone() {
 		return sizesDone;
-	}
-
-	public void setSizesDone(boolean sizesDone) {
-		this.sizesDone = sizesDone;
 	}
 
 	@Override
@@ -161,7 +142,44 @@ public class FlickrImage extends GridCell {
 		}
 	}
 
+	void setFarm(String farm) {
+		this.farm = farm;
+	}
+
+	void setId(String id) {
+		this.id = id;
+	}
+
+	void setLicense(FlickrLicense license) {
+		this.license = license;
+	}
+
+	void setLicenseId(String licenseId) {
+		this.licenseId = licenseId;
+	}
+
+	void setOwner(String owner) {
+		this.owner = owner;
+	}
+
 	public void setPlugin(FlickrImageRetrieve plugin) {
 		this.plugin = plugin;
+	}
+
+	void setSecret(String secret) {
+		this.secret = secret;
+	}
+
+	void setServer(String server) {
+		this.server = server;
+	}
+
+	public void setSizesDone(boolean sizesDone) {
+		this.sizesDone = sizesDone;
+	}
+
+	void setTitle(String title) {
+		this.title = title;
+		setName(title);
 	}
 }

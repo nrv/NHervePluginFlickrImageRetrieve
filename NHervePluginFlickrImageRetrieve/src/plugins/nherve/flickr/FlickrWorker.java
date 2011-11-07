@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Nicolas Hervé.
+ * Copyright 2011 Nicolas Herv√©.
  * 
  * This file is part of FlickrImageRetrieve, which is an ICY plugin.
  * 
@@ -44,10 +44,11 @@ public class FlickrWorker implements Runnable, FlickrProgressListener {
 	public final static int TYPE_INTERESTINGNESS = 2;
 	public final static int TYPE_TAGS = 3;
 	public final static int TYPE_IMAGE = 4;
+	public final static int TYPE_EXPERT = 5;
 
 	private List<FlickrWorkerListener> listeners;
 	private FlickrFrontend flickr;
-	private String tags;
+	private String queryParameters;
 	private int type;
 	private int maxToGrab;
 	private AbleToLogMessages display;
@@ -59,7 +60,7 @@ public class FlickrWorker implements Runnable, FlickrProgressListener {
 		this.flickr = flickr;
 		this.display = display;
 		this.type = TYPE_INTERESTINGNESS;
-		this.tags = null;
+		this.queryParameters = null;
 		this.maxToGrab = 1;
 		images = null;
 		image = null;
@@ -118,7 +119,10 @@ public class FlickrWorker implements Runnable, FlickrProgressListener {
 					image = flickr.getRandomInterestingImage(this);
 					break;
 				case TYPE_TAGS:
-					image = flickr.getRandomSearchByTagImage(tags, this);
+					image = flickr.getRandomSearchByTagImage(queryParameters, this);
+					break;
+				case TYPE_EXPERT:
+					image = flickr.getSearchByExpertQuery(queryParameters, this).get(0);
 					break;
 				default:
 					break;
@@ -148,7 +152,10 @@ public class FlickrWorker implements Runnable, FlickrProgressListener {
 					images = flickr.getRandomInterestingImage(maxToGrab, this);
 					break;
 				case TYPE_TAGS:
-					images = flickr.getRandomSearchByTagImage(tags, maxToGrab, this);
+					images = flickr.getRandomSearchByTagImage(queryParameters, maxToGrab, this);
+					break;
+				case TYPE_EXPERT:
+					images = flickr.getSearchByExpertQuery(queryParameters, this);
 					break;
 				default:
 					break;
@@ -174,9 +181,8 @@ public class FlickrWorker implements Runnable, FlickrProgressListener {
 		}
 	}
 
-	public void setTags(String tags) {
-		this.tags = tags;
-		setType(TYPE_TAGS);
+	public void setQueryParameters(String queryParameters) {
+		this.queryParameters = queryParameters;
 	}
 
 	public void setType(int type) {
@@ -203,8 +209,8 @@ public class FlickrWorker implements Runnable, FlickrProgressListener {
 		return type;
 	}
 
-	public String getTags() {
-		return tags;
+	public String getQueryParameters() {
+		return queryParameters;
 	}
 
 }

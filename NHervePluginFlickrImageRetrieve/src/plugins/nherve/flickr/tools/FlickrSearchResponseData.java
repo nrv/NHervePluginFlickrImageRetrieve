@@ -19,58 +19,61 @@
 
 package plugins.nherve.flickr.tools;
 
+import java.util.List;
+
 /**
  * 
  * @author Nicolas HERVE - n.herve@laposte.net
  */
-public class FlickrImageSize {
-	private String label;
-	private int width;
-	private int height;
-	private String source;
-	private String url;
+public class FlickrSearchResponseData {
+	private int page;
+	private int pages;
+	private int perpage;
+	private List<FlickrImage> pictures;
+	private int total;
 	
-	public FlickrImageSize() {
-		super();
+	public boolean isLastPage() {
+		return page == pages;
 	}
 
-	public String getLabel() {
-		return label;
+	public int getPage() {
+		return page;
 	}
-	
-	void setLabel(String label) {
-		this.label = label;
+
+	public int getPages() {
+		return pages;
 	}
-	
-	public int getWidth() {
-		return width;
+
+	public int getPerpage() {
+		return perpage;
 	}
-	
-	void setWidth(int width) {
-		this.width = width;
+
+	public List<FlickrImage> getPictures() {
+		return pictures;
 	}
-	
-	public int getHeight() {
-		return height;
+
+	public int getTotal() {
+		return total;
 	}
-	
-	void setHeight(int height) {
-		this.height = height;
+
+	public void setPage(int page) {
+		this.page = page;
 	}
-	
-	public String getSource() {
-		return source;
+
+	public void setPages(int pages) {
+		this.pages = pages;
 	}
-	
-	void setSource(String source) {
-		this.source = source;
+
+	public void setPerpage(int perpage) {
+		this.perpage = perpage;
 	}
-	
-	public String getUrl() {
-		return url;
+
+	public void setPictures(List<FlickrImage> pictures) {
+		this.pictures = pictures;
 	}
-	
-	void setUrl(String url) {
-		this.url = url;
+
+	public void setTotal(int total) {
+		this.total = total;
 	}
+
 }

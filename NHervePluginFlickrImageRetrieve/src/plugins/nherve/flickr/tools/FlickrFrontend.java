@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Nicolas Herv�.
+ * Copyright 2011 Nicolas Hervé.
  * 
  * This file is part of FlickrImageRetrieve, which is an ICY plugin.
  * 
@@ -30,7 +30,10 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.StringTokenizer;
 
@@ -45,11 +48,12 @@ import plugins.nherve.toolbox.genericgrid.GridCellCollection;
 public class FlickrFrontend {
 	private final static String API_URL = "http://api.flickr.com/services/rest/";
 
-	private boolean debug;
-	private Random rand;
 	private String applicationKey;
+	private boolean debug;
 	private String endpoint;
 	private FlickrThumbnailProvider provider;
+	private Random rand;
+	private Map<Integer, FlickrLicense> licenses;
 
 	public FlickrFrontend(String key) {
 		super();
@@ -58,12 +62,57 @@ public class FlickrFrontend {
 
 		applicationKey = key;
 		endpoint = API_URL + "?api_key=" + applicationKey;
+		licenses = null;
 	}
 
 	public void checkConnection() throws FlickrException {
 		send("flickr.test.echo", null);
 	}
 
+	public FlickrSearchResponse search(FlickrSearchQuery query) throws FlickrException {
+		return new FlickrSearchResponse(this, query);
+	}
+	
+	FlickrSearchResponseData searchAsData(FlickrSearchQuery query) throws FlickrException {
+		return getFromXmlAsData(searchByExpertQuery(query.getEffectiveQuery(), null));
+	}
+	
+	private GridCellCollection<FlickrImage> getFromXml(String fullXml, FlickrProgressListener l) throws FlickrException {
+		GridCellCollection<FlickrImage> result = new GridCellCollection<FlickrImage>(provider);
+		
+		result.addAll(getFromXmlAsList(fullXml, l));
+
+		return result;
+	}
+	
+	private FlickrSearchResponseData getFromXmlAsData(String fullXml) throws FlickrException {
+		FlickrSearchResponseData data = FlickrXmlParser.asResponseData(fullXml);
+		
+		for (FlickrImage img : data.getPictures()) {
+			populateLicense(img);
+		}
+		
+		return data;
+	}
+	
+	private List<FlickrImage> getFromXmlAsList(String fullXml, FlickrProgressListener l) throws FlickrException {
+		l.notifyNewProgressionStep("Parsing images response");
+		List<String> imagesXml = FlickrXmlParser.splitImagesXml(fullXml);
+		if (imagesXml.size() == 0) {
+			throw new FlickrException("No image found");
+		}
+
+		List<FlickrImage> result = new ArrayList<FlickrImage>();
+
+		for (String xml : imagesXml) {
+			FlickrImage img = FlickrXmlParser.parseImage(xml);
+			populateLicense(img);
+			result.add(img);
+		}
+
+		return result;
+	}
+	
 	private GridCellCollection<FlickrImage> getRandomFromXml(String fullXml, int max, FlickrProgressListener l) throws FlickrException {
 		l.notifyNewProgressionStep("Parsing images response");
 		List<String> imagesXml = FlickrXmlParser.splitImagesXml(fullXml);
@@ -77,6 +126,7 @@ public class FlickrFrontend {
 			int choosen = rand.nextInt(imagesXml.size());
 			String xmlChoosen = imagesXml.get(choosen);
 			FlickrImage img = FlickrXmlParser.parseImage(xmlChoosen);
+			populateLicense(img);
 			imagesXml.remove(choosen);
 			result.add(img);
 		} while (!imagesXml.isEmpty() && (result.size() < max));
@@ -84,44 +134,34 @@ public class FlickrFrontend {
 		return result;
 	}
 
-	void populateAvailableSizes(FlickrImage img, FlickrProgressListener l) throws FlickrException {
-		if (!img.isSizesDone()) {
-			if (l != null) {
-				l.notifyNewProgressionStep("Getting available sizes");
-			}
-			String fullXml = send("flickr.photos.getSizes&photo_id=" + img.getId(), l);
-			List<String> sizesXml = FlickrXmlParser.splitSizesXml(fullXml);
-			for (String sz : sizesXml) {
-				img.addAvailableSize(FlickrXmlParser.parseSize(sz));
-			}
-			img.setSizesDone(true);
-		}
+	public FlickrImage getRandomInterestingImage(FlickrProgressListener l) throws FlickrException {
+		return getRandomInterestingImage(1, l).get(0);
 	}
 
 	public GridCellCollection<FlickrImage> getRandomInterestingImage(int max, FlickrProgressListener l) throws FlickrException {
-		String fullXml = send("flickr.interestingness.getList", l);
+		String fullXml = send("flickr.interestingness.getList&extras=license", l);
 		return getRandomFromXml(fullXml, max, l);
-	}
-
-	public GridCellCollection<FlickrImage> getRandomRecentImage(int max, FlickrProgressListener l) throws FlickrException {
-		String fullXml = send("flickr.photos.getRecent", l);
-		return getRandomFromXml(fullXml, max, l);
-	}
-
-	public GridCellCollection<FlickrImage> getRandomSearchByTagImage(String tags, int max, FlickrProgressListener l) throws FlickrException {
-		return getRandomFromXml(searchByTags(tags, l), max, l);
-	}
-
-	public FlickrImage getRandomInterestingImage(FlickrProgressListener l) throws FlickrException {
-		return getRandomInterestingImage(1, l).get(0);
 	}
 
 	public FlickrImage getRandomRecentImage(FlickrProgressListener l) throws FlickrException {
 		return getRandomRecentImage(1, l).get(0);
 	}
 
+	public GridCellCollection<FlickrImage> getRandomRecentImage(int max, FlickrProgressListener l) throws FlickrException {
+		String fullXml = send("flickr.photos.getRecent&extras=license", l);
+		return getRandomFromXml(fullXml, max, l);
+	}
+	
 	public FlickrImage getRandomSearchByTagImage(String tags, FlickrProgressListener l) throws FlickrException {
 		return getRandomSearchByTagImage(tags, 1, l).get(0);
+	}
+
+	public GridCellCollection<FlickrImage> getRandomSearchByTagImage(String tags, int max, FlickrProgressListener l) throws FlickrException {
+		return getRandomFromXml(searchByTags(tags, l), max, l);
+	}
+
+	public GridCellCollection<FlickrImage> getSearchByExpertQuery(String query, FlickrProgressListener l) throws FlickrException {
+		return getFromXml(searchByExpertQuery(query, l), l);
 	}
 
 	public boolean isDebug() {
@@ -162,6 +202,54 @@ public class FlickrFrontend {
 		return loadImage(fi, "Thumbnail", l);
 	}
 
+	private void log(String message) {
+		if (isDebug()) {
+			Algorithm.out("[Flickr] " + message);
+		}
+	}
+	
+	public FlickrLicense getLicense(int id) throws FlickrException {
+		if (licenses == null) {
+			String fullXml = send("flickr.photos.licenses.getInfo", null);
+			
+			licenses = new HashMap<Integer, FlickrLicense>();
+			for (String xml : FlickrXmlParser.splitLicensesXml(fullXml)) {
+				FlickrLicense l = FlickrXmlParser.parseLicense(xml);
+				licenses.put(l.getId(), l);
+			}
+		}
+		
+		return licenses.get(id);
+	}
+
+	void populateAvailableSizes(FlickrImage img, FlickrProgressListener l) throws FlickrException {
+		if (!img.isSizesDone()) {
+			if (l != null) {
+				l.notifyNewProgressionStep("Getting available sizes");
+			}
+			String fullXml = send("flickr.photos.getSizes&photo_id=" + img.getId(), l);
+			List<String> sizesXml = FlickrXmlParser.splitSizesXml(fullXml);
+			for (String sz : sizesXml) {
+				img.addAvailableSize(FlickrXmlParser.parseSize(sz));
+			}
+			img.setSizesDone(true);
+		}
+	}
+	
+	void populateLicense(FlickrImage img) throws FlickrException {
+		if ((img.getLicense() == null) && (img.getLicenseId() != null)){
+			img.setLicense(getLicense(Integer.parseInt(img.getLicenseId())));
+		}
+	}
+	
+	private String searchByExpertQuery(String query, FlickrProgressListener l) throws FlickrException {
+		if ((query == null) || (query.length() == 0)) {
+			throw new FlickrException("Invalid query");
+		}
+
+		return send("flickr.photos.search&extras=license&" + query, l);
+	}
+
 	private String searchByTags(String tags, FlickrProgressListener l) throws FlickrException {
 		if (tags == null) {
 			throw new FlickrException("Invalid tags");
@@ -181,7 +269,7 @@ public class FlickrFrontend {
 			newTags += stk.nextToken();
 		}
 
-		return send("flickr.photos.search&tag_mode=all&sort=interestingness-desc&tags=" + newTags, l);
+		return send("flickr.photos.search&extras=license&tag_mode=all&sort=interestingness-desc&tags=" + newTags, l);
 	}
 
 	private String send(String method, FlickrProgressListener l) throws FlickrException {
@@ -229,12 +317,6 @@ public class FlickrFrontend {
 
 	public void setDebug(boolean debug) {
 		this.debug = debug;
-	}
-
-	private void log(String message) {
-		if (isDebug()) {
-			Algorithm.out("[Flickr] " + message);
-		}
 	}
 
 	public void setProvider(FlickrThumbnailProvider provider) {

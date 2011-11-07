@@ -23,54 +23,55 @@ package plugins.nherve.flickr.tools;
  * 
  * @author Nicolas HERVE - n.herve@laposte.net
  */
-public class FlickrImageSize {
-	private String label;
-	private int width;
-	private int height;
-	private String source;
-	private String url;
-	
-	public FlickrImageSize() {
+public class FlickrSearchQuery {
+	private String query;
+	private int page;
+	private int perpage;
+	private int max;
+
+	public FlickrSearchQuery(String query, int max) {
 		super();
+		
+		this.query = query;
+		this.max = max;
+		this.page = 1;
+		this.perpage = 100;
+	}
+	
+	public FlickrSearchQuery nextPageQuery() {
+		FlickrSearchQuery next = new FlickrSearchQuery(getInitialQuery(), getMax());
+		
+		next.setPerpage(getPerpage());
+		next.setPage(getPage() + 1);
+		
+		return next;
 	}
 
-	public String getLabel() {
-		return label;
+	public String getInitialQuery() {
+		return query;
 	}
 	
-	void setLabel(String label) {
-		this.label = label;
+	public String getEffectiveQuery() {
+		return query + "&extras=license&per_page=" + perpage + "&page=" + page;
 	}
-	
-	public int getWidth() {
-		return width;
+
+	public int getPage() {
+		return page;
 	}
-	
-	void setWidth(int width) {
-		this.width = width;
+
+	public void setPage(int page) {
+		this.page = page;
 	}
-	
-	public int getHeight() {
-		return height;
+
+	public int getPerpage() {
+		return perpage;
 	}
-	
-	void setHeight(int height) {
-		this.height = height;
+
+	public void setPerpage(int perpage) {
+		this.perpage = perpage;
 	}
-	
-	public String getSource() {
-		return source;
-	}
-	
-	void setSource(String source) {
-		this.source = source;
-	}
-	
-	public String getUrl() {
-		return url;
-	}
-	
-	void setUrl(String url) {
-		this.url = url;
+
+	public int getMax() {
+		return max;
 	}
 }

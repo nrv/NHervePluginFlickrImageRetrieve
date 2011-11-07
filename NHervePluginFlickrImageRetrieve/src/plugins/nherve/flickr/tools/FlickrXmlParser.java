@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Nicolas HervŽ.
+ * Copyright 2011 Nicolas Hervï¿½.
  * 
  * This file is part of FlickrImageRetrieve, which is an ICY plugin.
  * 
@@ -37,17 +37,36 @@ public class FlickrXmlParser {
 		return xml.substring(idx, xml.indexOf("\"", idx));
 	}
 	
+	public static int getXmlValueInt(String xml, String parameter) throws FlickrException {
+		try {
+			return Integer.parseInt(getXmlValue(xml, parameter));
+		} catch (NumberFormatException e) {
+			throw new FlickrException(e);
+		}
+	}
+	
 	public static FlickrImage parseImage(String xml) throws FlickrException {
 		FlickrImage image = new FlickrImage();
 		
 		image.setFarm(getXmlValue(xml, "farm"));
 		image.setServer(getXmlValue(xml, "server"));
 		image.setId(getXmlValue(xml, "id"));
+		image.setLicenseId(getXmlValue(xml, "license"));
 		image.setSecret(getXmlValue(xml, "secret"));
 		image.setOwner(getXmlValue(xml, "owner"));
 		image.setTitle(getXmlValue(xml, "title"));
 		
 		return image;
+	}
+	
+	public static FlickrLicense parseLicense(String xml) throws FlickrException {
+		FlickrLicense license = new FlickrLicense();
+		
+		license.setId(getXmlValueInt(xml,"id"));
+		license.setName(getXmlValue(xml, "name"));
+		license.setUrl(getXmlValue(xml, "url"));
+		
+		return license;
 	}
 	
 	public static FlickrImageSize parseSize(String xml) throws FlickrException {
@@ -57,8 +76,8 @@ public class FlickrXmlParser {
 		size.setSource(getXmlValue(xml, "source"));
 		size.setUrl(getXmlValue(xml, "url"));
 		try {
-			size.setWidth(Integer.parseInt(getXmlValue(xml, "width")));
-			size.setHeight(Integer.parseInt(getXmlValue(xml, "height")));
+			size.setWidth(getXmlValueInt(xml, "width"));
+			size.setHeight(getXmlValueInt(xml, "height"));
 		} catch (NumberFormatException e) {
 			throw new FlickrException(e);
 		}
@@ -72,6 +91,52 @@ public class FlickrXmlParser {
 	
 	public static List<String> splitSizesXml(String xml) throws FlickrException {
 		return splitXml(xml, "<size label=\"", "/>");
+	}
+	
+	public static List<String> splitLicensesXml(String xml) throws FlickrException {
+		return splitXml(xml, "<license id=\"", "/>");
+	}
+	
+	public static String getMetadata(String xml) throws FlickrException {
+		return getXml(xml, "<photos ", ">");
+	}
+	
+	public static FlickrSearchResponseData asResponseData(String xml) throws FlickrException {
+		FlickrSearchResponseData data = new FlickrSearchResponseData();
+		
+		String meta = getMetadata(xml);
+		data.setPage(getXmlValueInt(xml, "page"));
+		data.setPages(getXmlValueInt(xml, "pages"));
+		data.setPerpage(getXmlValueInt(xml, "perpage"));
+		data.setTotal(getXmlValueInt(xml, "total"));
+		
+		List<String> imagesXml = FlickrXmlParser.splitImagesXml(xml);
+		List<FlickrImage> pictures = new ArrayList<FlickrImage>();
+
+		for (String ixml : imagesXml) {
+			FlickrImage img = FlickrXmlParser.parseImage(ixml);
+			pictures.add(img);
+		}
+		
+		data.setPictures(pictures);
+		
+		return data;
+	}
+	
+	public static String getXml(String xml, String start, String end) throws FlickrException {
+		if (xml == null) {
+			throw new FlickrException("No XML to parse in getXml("+start+")");
+		}
+		
+		int s = xml.indexOf(start);
+		if (s > 0) {
+			int e = xml.indexOf(end, s);
+			if (e > 0) {
+				return xml.substring(s, e + end.length());
+			}
+		}
+		
+		return null;
 	}
 	
 	public static List<String> splitXml(String xml, String start, String end) throws FlickrException {
@@ -88,7 +153,7 @@ public class FlickrXmlParser {
 			if (s > 0) {
 				e = xml.indexOf(end, s);
 				if (e > 0) {
-					data.add(xml.substring(s, e + 2));
+					data.add(xml.substring(s, e + end.length()));
 				}
 			}
 		} while ((s > 0) && (e > 0));

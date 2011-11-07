@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Nicolas Hervé.
+ * Copyright 2011 Nicolas Herv√©.
  * 
  * This file is part of FlickrImageRetrieve, which is an ICY plugin.
  * 
@@ -52,14 +52,16 @@ import plugins.nherve.toolbox.plugin.SingletonPlugin;
  * @author Nicolas HERVE - n.herve@laposte.net
  */
 public class FlickrImageRetrieve extends SingletonPlugin implements ActionListener, FlickrWorkerListener, HeadlessReadyComponent {
-	private final static String VERSION = "1.2.1.0";
-	
+	private final static String VERSION = "1.3.0.0";
+
 	public final static String COPYRIGHT_HTML = "Copyright 2011 Nicolas HERVE";
 	private static String HELP = "<html>" + "<p align=\"center\"><b>" + HelpWindow.getTagFullPluginName() + "</b></p>" + "<p align=\"center\"><b>" + NherveToolbox.getDevNameHtml() + "</b></p>" + "<p align=\"center\"><a href=\"http://www.herve.name/pmwiki.php/Main/FlickrImageRetrieve\">Online help is available</a></p>" + "<p align=\"center\"><b>" + COPYRIGHT_HTML + "</b></p>" + "<hr/>" + "<p>" + HelpWindow.getTagPluginName() + NherveToolbox.getLicenceHtml() + "</p>" + "<p>" + NherveToolbox.getLicenceHtmllink() + "</p>" + "</html>";
 	private final static String APP_KEY = "70331e00a63dc50a87f0a7a40e1242ad";
 	private JButton btGrabRandom;
 	private JButton btGrabByTag;
+	private JButton btGrabByExpertQuery;
 	private JTextField tfTag;
+	private JTextField tfExpert;
 	private JTextArea taLog;
 	private JTextField tfMaxToGrab;
 	private JButton btHelp;
@@ -100,6 +102,10 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 
 			if (b == btGrabByTag) {
 				grab(FlickrWorker.TYPE_TAGS, tfTag.getText());
+			}
+			
+			if (b == btGrabByExpertQuery) {
+				grab(FlickrWorker.TYPE_EXPERT, tfExpert.getText());
 			}
 		}
 	}
@@ -160,9 +166,26 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 		ComponentUtil.setFixedSize(tfTag, new Dimension(300, 25));
 		btGrabByTag = new JButton("Grab");
 		btGrabByTag.addActionListener(this);
-
+		
 		JPanel searchPanel = GuiUtil.createLineBoxPanel(tfTag, Box.createHorizontalGlue(), btGrabByTag);
 		searchPanel.setBorder(new TitledBorder("Search image"));
+
+		// Expert
+		tfExpert = new JTextField();
+		tfExpert.addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent e) {
+				int key = e.getKeyCode();
+				if (key == KeyEvent.VK_ENTER) {
+					grab(FlickrWorker.TYPE_EXPERT, tfExpert.getText());
+				}
+			}
+		});
+		ComponentUtil.setFixedSize(tfExpert, new Dimension(300, 25));
+		btGrabByExpertQuery = new JButton("Grab");
+		btGrabByExpertQuery.addActionListener(this);
+
+		JPanel expertPanel = GuiUtil.createLineBoxPanel(tfExpert, Box.createHorizontalGlue(), btGrabByExpertQuery);
+		expertPanel.setBorder(new TitledBorder("Expert query"));
 
 		// Log window
 		taLog = new JTextArea();
@@ -185,7 +208,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 
 		// Frame stuff
 		int spacing = 10;
-		JPanel myPanel = GuiUtil.createPageBoxPanel(Box.createVerticalGlue(), randomPanel, Box.createVerticalStrut(spacing), searchPanel, Box.createVerticalStrut(spacing), progressPanel, Box.createVerticalStrut(spacing), taLogScroll, Box.createVerticalGlue());
+		JPanel myPanel = GuiUtil.createPageBoxPanel(Box.createVerticalGlue(), randomPanel, Box.createVerticalStrut(spacing), searchPanel, Box.createVerticalStrut(spacing), expertPanel, Box.createVerticalStrut(spacing), progressPanel, Box.createVerticalStrut(spacing), taLogScroll, Box.createVerticalGlue());
 		mainPanel.add(myPanel);
 	}
 
@@ -194,7 +217,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 		return new Dimension(500, 450);
 	}
 
-	private void grab(int type, String tags) {
+	private void grab(int type, String parameters) {
 		if (cbSingleImage.isSelected()) {
 			btGrabByTag.setEnabled(false);
 			btGrabRandom.setEnabled(false);
@@ -204,19 +227,19 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 
 			FlickrWorker worker = new FlickrWorker(flickr, this);
 			worker.setType(type);
-			if (type == FlickrWorker.TYPE_TAGS) {
-				worker.setTags(tags);
+			if ((type == FlickrWorker.TYPE_TAGS) || (type == FlickrWorker.TYPE_EXPERT)) {
+				worker.setQueryParameters(parameters);
 			}
 			worker.addListener(this);
 
 			Thread t = new Thread(worker);
 			t.start();
 		} else {
-			grabGrid(type, tags);
+			grabGrid(type, parameters);
 		}
 	}
-	
-	private void grabGrid(int type, String tags) {
+
+	private void grabGrid(int type, String parameters) {
 		btGrabByTag.setEnabled(false);
 		btGrabRandom.setEnabled(false);
 		pbProgress.setIndeterminate(true);
@@ -233,8 +256,8 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 		}
 		worker.setMaxToGrab(mtg);
 		worker.setType(type);
-		if (type == FlickrWorker.TYPE_TAGS) {
-			worker.setTags(tags);
+		if ((type == FlickrWorker.TYPE_TAGS) || (type == FlickrWorker.TYPE_EXPERT)) {
+			worker.setQueryParameters(parameters);
 		}
 		worker.addListener(this);
 
@@ -265,36 +288,40 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 					grid.setTitle("FiR - interestingness");
 					break;
 				case FlickrWorker.TYPE_TAGS:
-					grid.setTitle("FiR - " + w.getTags());
+					grid.setTitle("FiR - " + w.getQueryParameters());
+					break;
+				case FlickrWorker.TYPE_EXPERT:
+					grid.setTitle("FiR - " + w.getQueryParameters());
 					break;
 				default:
 					grid.setTitle("FiR");
 					break;
 				}
-				
+
 				grid.setImages(w.getImages());
 				grid.startInterface(getFrame());
 
 				for (final FlickrImage i : grid.getImages()) {
 					i.setPlugin(this);
-//					new Thread(new Runnable() {
-//
-//						@Override
-//						public void run() {
-//							try {
-//								i.setInternal(flickr.loadImageThumbnail(i, null));
-//							} catch (final FlickrException e) {
-//								i.setInternal(null);
-//								i.removedFromGrid();
-//								ThreadUtil.invokeLater(new Runnable() {
-//									@Override
-//									public void run() {
-//										displayMessage(e.getClass().getName() + " : " + e.getMessage());
-//									}
-//								});
-//							}
-//						}
-//					}).start();
+					// new Thread(new Runnable() {
+					//
+					// @Override
+					// public void run() {
+					// try {
+					// i.setInternal(flickr.loadImageThumbnail(i, null));
+					// } catch (final FlickrException e) {
+					// i.setInternal(null);
+					// i.removedFromGrid();
+					// ThreadUtil.invokeLater(new Runnable() {
+					// @Override
+					// public void run() {
+					// displayMessage(e.getClass().getName() + " : " +
+					// e.getMessage());
+					// }
+					// });
+					// }
+					// }
+					// }).start();
 				}
 			}
 		}
@@ -328,7 +355,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 		provider.close();
 		provider = null;
 	}
-	
+
 	@Override
 	public String getDefaultVersion() {
 		return VERSION;

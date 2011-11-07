@@ -23,54 +23,37 @@ package plugins.nherve.flickr.tools;
  * 
  * @author Nicolas HERVE - n.herve@laposte.net
  */
-public class FlickrImageSize {
-	private String label;
-	private int width;
-	private int height;
-	private String source;
+
+public class FlickrLicense {
+	private int id;
+	private String name;
 	private String url;
-	
-	public FlickrImageSize() {
+
+	public FlickrLicense() {
 		super();
 	}
 
-	public String getLabel() {
-		return label;
+	public int getId() {
+		return id;
 	}
-	
-	void setLabel(String label) {
-		this.label = label;
+
+	public String getName() {
+		return name;
 	}
-	
-	public int getWidth() {
-		return width;
-	}
-	
-	void setWidth(int width) {
-		this.width = width;
-	}
-	
-	public int getHeight() {
-		return height;
-	}
-	
-	void setHeight(int height) {
-		this.height = height;
-	}
-	
-	public String getSource() {
-		return source;
-	}
-	
-	void setSource(String source) {
-		this.source = source;
-	}
-	
+
 	public String getUrl() {
 		return url;
 	}
-	
-	void setUrl(String url) {
+
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setUrl(String url) {
 		this.url = url;
 	}
 }
