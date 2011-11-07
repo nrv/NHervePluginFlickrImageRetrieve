@@ -38,6 +38,7 @@ import java.util.Random;
 import java.util.StringTokenizer;
 
 import plugins.nherve.flickr.FlickrThumbnailProvider;
+import plugins.nherve.flickr.tools.filters.FlickrSearchResponseFilter;
 import plugins.nherve.toolbox.Algorithm;
 import plugins.nherve.toolbox.genericgrid.GridCellCollection;
 
@@ -51,9 +52,9 @@ public class FlickrFrontend {
 	private String applicationKey;
 	private boolean debug;
 	private String endpoint;
+	private Map<Integer, FlickrLicense> licenses;
 	private FlickrThumbnailProvider provider;
 	private Random rand;
-	private Map<Integer, FlickrLicense> licenses;
 
 	public FlickrFrontend(String key) {
 		super();
@@ -69,14 +70,6 @@ public class FlickrFrontend {
 		send("flickr.test.echo", null);
 	}
 
-	public FlickrSearchResponse search(FlickrSearchQuery query) throws FlickrException {
-		return new FlickrSearchResponse(this, query);
-	}
-	
-	FlickrSearchResponseData searchAsData(FlickrSearchQuery query) throws FlickrException {
-		return getFromXmlAsData(searchByExpertQuery(query.getEffectiveQuery(), null));
-	}
-	
 	private GridCellCollection<FlickrImage> getFromXml(String fullXml, FlickrProgressListener l) throws FlickrException {
 		GridCellCollection<FlickrImage> result = new GridCellCollection<FlickrImage>(provider);
 		
@@ -90,6 +83,7 @@ public class FlickrFrontend {
 		
 		for (FlickrImage img : data.getPictures()) {
 			populateLicense(img);
+			populateAvailableSizes(img, null);
 		}
 		
 		return data;
@@ -113,6 +107,20 @@ public class FlickrFrontend {
 		return result;
 	}
 	
+	public FlickrLicense getLicense(int id) throws FlickrException {
+		if (licenses == null) {
+			String fullXml = send("flickr.photos.licenses.getInfo", null);
+			
+			licenses = new HashMap<Integer, FlickrLicense>();
+			for (String xml : FlickrXmlParser.splitLicensesXml(fullXml)) {
+				FlickrLicense l = FlickrXmlParser.parseLicense(xml);
+				licenses.put(l.getId(), l);
+			}
+		}
+		
+		return licenses.get(id);
+	}
+	
 	private GridCellCollection<FlickrImage> getRandomFromXml(String fullXml, int max, FlickrProgressListener l) throws FlickrException {
 		l.notifyNewProgressionStep("Parsing images response");
 		List<String> imagesXml = FlickrXmlParser.splitImagesXml(fullXml);
@@ -133,7 +141,7 @@ public class FlickrFrontend {
 
 		return result;
 	}
-
+	
 	public FlickrImage getRandomInterestingImage(FlickrProgressListener l) throws FlickrException {
 		return getRandomInterestingImage(1, l).get(0);
 	}
@@ -151,11 +159,11 @@ public class FlickrFrontend {
 		String fullXml = send("flickr.photos.getRecent&extras=license", l);
 		return getRandomFromXml(fullXml, max, l);
 	}
-	
+
 	public FlickrImage getRandomSearchByTagImage(String tags, FlickrProgressListener l) throws FlickrException {
 		return getRandomSearchByTagImage(tags, 1, l).get(0);
 	}
-
+	
 	public GridCellCollection<FlickrImage> getRandomSearchByTagImage(String tags, int max, FlickrProgressListener l) throws FlickrException {
 		return getRandomFromXml(searchByTags(tags, l), max, l);
 	}
@@ -168,7 +176,7 @@ public class FlickrFrontend {
 		return debug;
 	}
 
-	private IcyBufferedImage loadImage(FlickrImage fi, String size, FlickrProgressListener l) throws FlickrException {
+	public IcyBufferedImage loadImage(FlickrImage fi, String size, FlickrProgressListener l) throws FlickrException {
 		URL url = fi.getImageURL(size);
 		log("Loading " + fi.getId() + " - " + url);
 		return loadImage(url, l);
@@ -207,20 +215,6 @@ public class FlickrFrontend {
 			Algorithm.out("[Flickr] " + message);
 		}
 	}
-	
-	public FlickrLicense getLicense(int id) throws FlickrException {
-		if (licenses == null) {
-			String fullXml = send("flickr.photos.licenses.getInfo", null);
-			
-			licenses = new HashMap<Integer, FlickrLicense>();
-			for (String xml : FlickrXmlParser.splitLicensesXml(fullXml)) {
-				FlickrLicense l = FlickrXmlParser.parseLicense(xml);
-				licenses.put(l.getId(), l);
-			}
-		}
-		
-		return licenses.get(id);
-	}
 
 	void populateAvailableSizes(FlickrImage img, FlickrProgressListener l) throws FlickrException {
 		if (!img.isSizesDone()) {
@@ -240,6 +234,18 @@ public class FlickrFrontend {
 		if ((img.getLicense() == null) && (img.getLicenseId() != null)){
 			img.setLicense(getLicense(Integer.parseInt(img.getLicenseId())));
 		}
+	}
+
+	public FlickrSearchResponse search(FlickrSearchQuery query) throws FlickrException {
+		return new FlickrSearchResponse(this, query);
+	}
+	
+	public FlickrSearchResponse search(FlickrSearchQuery query, FlickrSearchResponseFilter filter) throws FlickrException {
+		return new FlickrSearchResponse(this, query, filter);
+	}
+	
+	FlickrSearchResponseData searchAsData(FlickrSearchQuery query) throws FlickrException {
+		return getFromXmlAsData(searchByExpertQuery(query.getEffectiveQuery(), null));
 	}
 	
 	private String searchByExpertQuery(String query, FlickrProgressListener l) throws FlickrException {

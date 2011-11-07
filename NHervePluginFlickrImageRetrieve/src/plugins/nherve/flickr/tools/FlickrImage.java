@@ -22,6 +22,7 @@ package plugins.nherve.flickr.tools;
 import java.awt.event.MouseEvent;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,7 +59,7 @@ public class FlickrImage extends GridCell {
 		sizes.put(s.getLabel(), s);
 	}
 
-	String getBiggestAvailableSize() {
+	public String getBiggestAvailableSize() {
 		int maxSurf = 0;
 		String maxSize = null;
 
@@ -71,6 +72,21 @@ public class FlickrImage extends GridCell {
 		}
 
 		return maxSize;
+	}
+	
+	public String getClosestSize(int prefered) {
+		int prefSurfDif = Integer.MAX_VALUE;
+		String prefSize = null;
+
+		for (FlickrImageSize sz : sizes.values()) {
+			int surfDif = Math.abs(prefered - sz.getWidth() * sz.getHeight());
+			if (surfDif < prefSurfDif) {
+				prefSurfDif = surfDif;
+				prefSize = sz.getLabel();
+			}
+		}
+
+		return prefSize;
 	}
 
 	public String getFarm() {
@@ -181,5 +197,13 @@ public class FlickrImage extends GridCell {
 	void setTitle(String title) {
 		this.title = title;
 		setName(title);
+	}
+
+	public Collection<FlickrImageSize> getSizes() {
+		if (isSizesDone()) {
+			return sizes.values();
+		}
+
+		return null;
 	}
 }

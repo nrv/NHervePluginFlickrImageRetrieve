@@ -38,6 +38,8 @@ import plugins.nherve.flickr.tools.FlickrImage;
 import plugins.nherve.flickr.tools.FlickrProgressListener;
 import plugins.nherve.flickr.tools.FlickrSearchQuery;
 import plugins.nherve.flickr.tools.FlickrSearchResponse;
+import plugins.nherve.flickr.tools.FlickrSearchResponse.FlickrSearchResponseIterator;
+import plugins.nherve.flickr.tools.filters.MinSizeFilter;
 import plugins.nherve.toolbox.Algorithm;
 
 /**
@@ -53,7 +55,14 @@ public class FlickrGrab extends Algorithm implements FlickrProgressListener {
 	public static void main(String[] args) {
 		FlickrGrab grab = new FlickrGrab();
 		grab.init(APP_KEY, 1, false);
-		grab.work("/home/nherve/Travail/Data/Flickr", "license=1,2,5,7&tag_mode=all&sort=interestingness-desc&tags=biology", 10);
+		
+		grab.grabEarthGrid("/home/nherve/Travail/Data/Flickr", 5000, 10, 400, 1000 * 800, 90);
+		
+		//long last60days = System.currentTimeMillis() - 60 * 24 * 60 * 60 * 1000;
+		//grab.test("license=1,2,5,7&content_type=1&bbox=40,0,50,10&min_date_upload=" + last60days + "&sort=interestingness-desc&accuracy=6");
+		// grab.work("/home/nherve/Travail/Data/Flickr",
+		// "license=1,2,5,7&tag_mode=all&sort=interestingness-desc&tags=biology",
+		// 10, 400, 1000 * 800);
 	}
 
 	private FlickrFrontend flickr;
@@ -92,7 +101,131 @@ public class FlickrGrab extends Algorithm implements FlickrProgressListener {
 		return true;
 	}
 
-	private void work(String parent, String query, int nb) {
+	private void test(String query) {
+		try {
+			FlickrSearchQuery q = new FlickrSearchQuery(query, 100);
+			q.setPerpage(10);
+
+			FlickrSearchResponse pictures = flickr.search(q);
+			for (FlickrImage i : pictures) {
+				outWithTime(i.getId());
+			}
+		} catch (FlickrException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void grabEarthGrid(String parent, int nbSquare, int nbPicPerSquare, int minDim, int preferedSurface, int maxUploadedDays) {
+		int MIN_LONGITUDE = -180;
+		int MAX_LONGITUDE = 180;
+		int MIN_LATITUDE = -90;
+		int MAX_LATITUDE = 90;
+
+		int LONG_LENGTH = MAX_LONGITUDE - MIN_LONGITUDE;
+		int LAT_LENGTH = MAX_LATITUDE - MIN_LATITUDE;
+
+		int FULL_SURFACE = LONG_LENGTH * LAT_LENGTH;
+		int UNIT_LENGTH = (int) Math.floor(Math.sqrt(FULL_SURFACE / (double) nbSquare));
+
+		File dir = getDirectoryForGrabSession(parent);
+		dir.mkdir();
+
+		File picdir = new File(dir + File.separator + "pictures");
+		picdir.mkdir();
+
+		File metadata = new File(dir, "metadata.txt");
+		BufferedWriter w = null;
+
+		long lastDays = System.currentTimeMillis() - maxUploadedDays * 24 * 60 * 60 * 1000;
+		Random sleepRandom = new Random(System.currentTimeMillis());
+
+		try {
+			w = new BufferedWriter(new FileWriter(metadata));
+
+			for (int longitude = MIN_LONGITUDE; longitude < (MAX_LONGITUDE - UNIT_LENGTH); longitude += UNIT_LENGTH) {
+				for (int latitude = MIN_LATITUDE; latitude < (MAX_LATITUDE - UNIT_LENGTH); latitude += UNIT_LENGTH) {
+					int bbox1 = longitude;
+					int bbox2 = latitude;
+					int bbox3 = longitude + UNIT_LENGTH;
+					int bbox4 = latitude + UNIT_LENGTH;
+
+					String query = "license=1,2,5,7";
+					query += "&content_type=1";
+					query += "&min_date_upload=" + lastDays;
+					query += "&sort=interestingness-desc";
+					query += "&bbox=" + bbox1 + "," + bbox2 + "," + bbox3 + "," + bbox4;
+					query += "&accuracy=6";
+
+					w.write("query = " + query);
+					w.newLine();
+
+					FlickrSearchQuery q = new FlickrSearchQuery(query, nbPicPerSquare);
+					q.setPerpage(10);
+
+					FlickrSearchResponse pictures = flickr.search(q, new MinSizeFilter(minDim));
+
+					FlickrSearchResponseIterator it = (FlickrSearchResponseIterator) pictures.iterator();
+					
+					outWithTime("bbox = " + bbox1 + ", " + bbox2 + ", " + bbox3 + ", " + bbox4 + " - " + it.getTotal() + " images in the last " + maxUploadedDays + " days");
+					
+					FlickrImage i = null;
+					
+					while (it.hasNext()) {
+						i = it.next();
+						IcyBufferedImage img = flickr.loadImage(i, i.getClosestSize(preferedSurface), this);
+						File outputFile = new File(picdir, i.getId() + ".jpg");
+						try {
+							Saver.saveImage(img, outputFile, true);
+							float sz = outputFile.length();
+							String strSz = " o";
+							if (sz > 1024) {
+								sz /= 1024;
+								strSz = " Ko";
+								if (sz > 1024) {
+									sz /= 1024;
+									strSz = " Mo";
+								}
+							}
+
+							strSz = df.format(sz) + strSz;
+
+							w.write(outputFile.getName() + " | " + img.getWidth() + "x" + img.getHeight() + " | " + strSz + " | " + i.getImageWebPageURL() + " | " + i.getId() + " | " + i.getOwner() + " | " + i.getLicense().getName() + " - " + i.getTitle());
+							w.newLine();
+							w.flush();
+							outWithTime("bbox = " + bbox1 + ", " + bbox2 + ", " + bbox3 + ", " + bbox4 + " - " + outputFile.getName() + " - " + strSz + " - " + img.getWidth() + "x" + img.getHeight() + " - " + i.getTitle() + " - " + i.getLicense().getName());
+						} catch (IOException e1) {
+							err(outputFile.getName() + " - " + e1.getClass().getName() + " : " + e1.getMessage());
+						} catch (FormatException e) {
+							err(outputFile.getName() + " - " + e.getClass().getName() + " : " + e.getMessage());
+						}
+
+						if (gentleSleepSeconds > 0) {
+							try {
+								Thread.sleep(1l + sleepRandom.nextInt(gentleSleepSeconds * 2000));
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
+					}
+				}
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (FlickrException e) {
+			e.printStackTrace();
+		} finally {
+			if (w != null) {
+				try {
+					w.close();
+				} catch (IOException e) {
+					// ignore
+				}
+			}
+		}
+	}
+
+	private void work(String parent, String query, int nb, int minDim, int preferedSurface) {
 		Random sleepRandom = new Random(System.currentTimeMillis());
 
 		File dir = getDirectoryForGrabSession(parent);
@@ -113,10 +246,10 @@ public class FlickrGrab extends Algorithm implements FlickrProgressListener {
 			FlickrSearchQuery q = new FlickrSearchQuery(query, nb);
 			q.setPerpage(10);
 
-			FlickrSearchResponse pictures = flickr.search(q);
+			FlickrSearchResponse pictures = flickr.search(q, new MinSizeFilter(minDim));
 
 			for (FlickrImage i : pictures) {
-				IcyBufferedImage img = flickr.loadImageBiggestAvailableSize(i, this);
+				IcyBufferedImage img = flickr.loadImage(i, i.getClosestSize(preferedSurface), this);
 				File outputFile = new File(picdir, i.getId() + ".jpg");
 				try {
 					Saver.saveImage(img, outputFile, true);
@@ -130,13 +263,13 @@ public class FlickrGrab extends Algorithm implements FlickrProgressListener {
 							strSz = " Mo";
 						}
 					}
-					
+
 					strSz = df.format(sz) + strSz;
-					
+
 					w.write(outputFile.getName() + " | " + img.getWidth() + "x" + img.getHeight() + " | " + strSz + " | " + i.getImageWebPageURL() + " | " + i.getId() + " | " + i.getOwner() + " | " + i.getLicense().getName() + " - " + i.getTitle());
 					w.newLine();
 					w.flush();
-					outWithTime(outputFile.getName() + " - " + strSz + " - " + i.getTitle() + " - " + i.getLicense().getName());
+					outWithTime(outputFile.getName() + " - " + strSz + " - " + img.getWidth() + "x" + img.getHeight() + " - " + i.getTitle() + " - " + i.getLicense().getName());
 				} catch (IOException e1) {
 					err(outputFile.getName() + " - " + e1.getClass().getName() + " : " + e1.getMessage());
 				} catch (FormatException e) {

@@ -21,6 +21,9 @@ package plugins.nherve.flickr.tools;
 
 import java.util.Iterator;
 
+import plugins.nherve.flickr.tools.filters.FlickrSearchResponseFilter;
+import plugins.nherve.flickr.tools.filters.NoFilter;
+
 /**
  * 
  * @author Nicolas HERVE - n.herve@laposte.net
@@ -32,40 +35,56 @@ public class FlickrSearchResponse implements Iterable<FlickrImage> {
 		private FlickrSearchQuery currentQuery;
 		private int count;
 
+		private FlickrImage nextImage;
+
 		public FlickrSearchResponseIterator() throws FlickrException {
 			super();
-			
+
 			currentQuery = originalQuery;
 			currentData = null;
 			currentIterator = null;
+			nextImage = null;
 			count = 0;
 		}
 
 		public void init() throws FlickrException {
 			nextPage();
+			doNext();
 		}
 
 		@Override
 		public boolean hasNext() {
-			return (count < currentQuery.getMax()) && (currentData != null) && (currentIterator != null) && (currentIterator.hasNext() || (!currentData.isLastPage()));
+			return (count < currentQuery.getMax()) && (nextImage != null);
+		}
+
+		private void doNext() {
+			nextImage = null;
+			if ((currentData != null) && (currentIterator != null)) {
+				if (!currentIterator.hasNext() && (!currentData.isLastPage())) {
+					try {
+						nextPage();
+					} catch (FlickrException e) {
+						return;
+					}
+				}
+
+				if (currentIterator.hasNext()) {
+					nextImage = currentIterator.next();
+				}
+			}
 		}
 
 		@Override
 		public FlickrImage next() {
-			if (!currentIterator.hasNext()) {
-				try {
-					nextPage();
-				} catch (FlickrException e) {
-					return null;
-				}
-			}
-			
-			if (currentIterator.hasNext()) {
-				count++;
-				return currentIterator.next();
-			}
+			FlickrImage result = null;
 
-			return null;
+			do {
+				result = nextImage;
+				doNext();
+			} while (!filter.match(result) && hasNext());
+
+			count++;
+			return result;
 		}
 
 		@Override
@@ -81,15 +100,25 @@ public class FlickrSearchResponse implements Iterable<FlickrImage> {
 			currentData = flickr.searchAsData(currentQuery);
 			currentIterator = currentData.getPictures().iterator();
 		}
+
+		public int getTotal() {
+			return currentData.getTotal();
+		}
 	}
 
 	private FlickrFrontend flickr;
 	private FlickrSearchQuery originalQuery;
+	private FlickrSearchResponseFilter filter;
 
-	public FlickrSearchResponse(FlickrFrontend flickr, FlickrSearchQuery query) {
+	public FlickrSearchResponse(FlickrFrontend flickr, FlickrSearchQuery query, FlickrSearchResponseFilter filter) {
 		super();
 		this.flickr = flickr;
 		this.originalQuery = query;
+		this.filter = filter;
+	}
+
+	public FlickrSearchResponse(FlickrFrontend flickr, FlickrSearchQuery query) {
+		this(flickr, query, new NoFilter());
 	}
 
 	@Override
