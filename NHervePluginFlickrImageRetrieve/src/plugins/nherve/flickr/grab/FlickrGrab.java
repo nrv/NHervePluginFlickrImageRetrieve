@@ -19,7 +19,10 @@
 
 package plugins.nherve.flickr.grab;
 
+import icy.file.Saver;
+import icy.image.IcyBufferedImage;
 import icy.network.NetworkUtil;
+import icy.preferences.ApplicationPreferences;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -28,6 +31,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Random;
 
+import loci.formats.FormatException;
 import plugins.nherve.flickr.tools.FlickrException;
 import plugins.nherve.flickr.tools.FlickrFrontend;
 import plugins.nherve.flickr.tools.FlickrImage;
@@ -48,7 +52,7 @@ public class FlickrGrab extends Algorithm implements FlickrProgressListener {
 	 */
 	public static void main(String[] args) {
 		FlickrGrab grab = new FlickrGrab();
-		grab.init(APP_KEY, 5, false);
+		grab.init(APP_KEY, 1, false);
 		grab.work("/home/nherve/Travail/Data/Flickr", "license=1,2,5,7&tag_mode=all&sort=interestingness-desc&tags=biology", 10);
 	}
 
@@ -68,10 +72,11 @@ public class FlickrGrab extends Algorithm implements FlickrProgressListener {
 	private void init(String key, int gentleSleepSeconds, boolean debug) {
 		NetworkUtil.enableProxySetting();
 		NetworkUtil.enableSystemProxy();
+		ApplicationPreferences.load();
 
 		flickr = new FlickrFrontend(key);
 		flickr.setDebug(debug);
-		setLogEnabled(true);
+		setLogEnabled(debug);
 
 		this.gentleSleepSeconds = gentleSleepSeconds;
 	}
@@ -111,11 +116,36 @@ public class FlickrGrab extends Algorithm implements FlickrProgressListener {
 			FlickrSearchResponse pictures = flickr.search(q);
 
 			for (FlickrImage i : pictures) {
-				log("* " + i.getId() + " - " + i.getLicense().getName());
+				IcyBufferedImage img = flickr.loadImageBiggestAvailableSize(i, this);
+				File outputFile = new File(picdir, i.getId() + ".jpg");
+				try {
+					Saver.saveImage(img, outputFile, true);
+					float sz = outputFile.length();
+					String strSz = " o";
+					if (sz > 1024) {
+						sz /= 1024;
+						strSz = " Ko";
+						if (sz > 1024) {
+							sz /= 1024;
+							strSz = " Mo";
+						}
+					}
+					
+					strSz = df.format(sz) + strSz;
+					
+					w.write(outputFile.getName() + " | " + img.getWidth() + "x" + img.getHeight() + " | " + strSz + " | " + i.getImageWebPageURL() + " | " + i.getId() + " | " + i.getOwner() + " | " + i.getLicense().getName() + " - " + i.getTitle());
+					w.newLine();
+					w.flush();
+					outWithTime(outputFile.getName() + " - " + strSz + " - " + i.getTitle() + " - " + i.getLicense().getName());
+				} catch (IOException e1) {
+					err(outputFile.getName() + " - " + e1.getClass().getName() + " : " + e1.getMessage());
+				} catch (FormatException e) {
+					err(outputFile.getName() + " - " + e.getClass().getName() + " : " + e.getMessage());
+				}
 
 				if (gentleSleepSeconds > 0) {
 					try {
-						Thread.sleep((long) (sleepRandom.nextInt(gentleSleepSeconds * 2000)));
+						Thread.sleep(1l + sleepRandom.nextInt(gentleSleepSeconds * 2000));
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -123,9 +153,9 @@ public class FlickrGrab extends Algorithm implements FlickrProgressListener {
 			}
 
 		} catch (IOException e) {
-			logError(e);
+			e.printStackTrace();
 		} catch (FlickrException e) {
-			logError(e);
+			e.printStackTrace();
 		} finally {
 			if (w != null) {
 				try {
