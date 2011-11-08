@@ -51,10 +51,21 @@ public class FlickrXmlParser {
 		image.setFarm(getXmlValue(xml, "farm"));
 		image.setServer(getXmlValue(xml, "server"));
 		image.setId(getXmlValue(xml, "id"));
-		image.setLicenseId(getXmlValue(xml, "license"));
 		image.setSecret(getXmlValue(xml, "secret"));
 		image.setOwner(getXmlValue(xml, "owner"));
 		image.setTitle(getXmlValue(xml, "title"));
+		
+		try {
+			image.setLicenseId(getXmlValue(xml, "license"));
+		} catch (FlickrException e) {
+			// ignore
+		}
+		
+		try {
+			image.setTags(getXmlValue(xml, "tags"));
+		} catch (FlickrException e) {
+			// ignore
+		}
 		
 		return image;
 	}
@@ -105,10 +116,10 @@ public class FlickrXmlParser {
 		FlickrSearchResponseData data = new FlickrSearchResponseData();
 		
 		String meta = getMetadata(xml);
-		data.setPage(getXmlValueInt(xml, "page"));
-		data.setPages(getXmlValueInt(xml, "pages"));
-		data.setPerpage(getXmlValueInt(xml, "perpage"));
-		data.setTotal(getXmlValueInt(xml, "total"));
+		data.setPage(getXmlValueInt(meta, "page"));
+		data.setPages(getXmlValueInt(meta, "pages"));
+		data.setPerpage(getXmlValueInt(meta, "perpage"));
+		data.setTotal(getXmlValueInt(meta, "total"));
 		
 		List<String> imagesXml = FlickrXmlParser.splitImagesXml(xml);
 		List<FlickrImage> pictures = new ArrayList<FlickrImage>();

@@ -45,6 +45,7 @@ public class FlickrImage extends GridCell {
 	private String server;
 	private Map<String, FlickrImageSize> sizes;
 	private boolean sizesDone;
+	private String tags;
 	private String title;
 
 	public FlickrImage() {
@@ -138,6 +139,18 @@ public class FlickrImage extends GridCell {
 		return server;
 	}
 
+	public Collection<FlickrImageSize> getSizes() {
+		if (isSizesDone()) {
+			return sizes.values();
+		}
+
+		return null;
+	}
+
+	public String getTags() {
+		return tags;
+	}
+
 	public String getTitle() {
 		return title;
 	}
@@ -194,16 +207,12 @@ public class FlickrImage extends GridCell {
 		this.sizesDone = sizesDone;
 	}
 
+	public void setTags(String tags) {
+		this.tags = tags;
+	}
+
 	void setTitle(String title) {
 		this.title = title;
 		setName(title);
-	}
-
-	public Collection<FlickrImageSize> getSizes() {
-		if (isSizesDone()) {
-			return sizes.values();
-		}
-
-		return null;
 	}
 }

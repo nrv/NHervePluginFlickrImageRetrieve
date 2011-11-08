@@ -52,7 +52,7 @@ public class FlickrSearchQuery {
 	}
 	
 	public String getEffectiveQuery() {
-		return query + "&extras=license&per_page=" + perpage + "&page=" + page;
+		return query + "&extras=license,tags&per_page=" + perpage + "&page=" + page;
 	}
 
 	public int getPage() {
