@@ -40,7 +40,6 @@ import plugins.nherve.flickr.tools.FlickrSearchQuery;
 import plugins.nherve.flickr.tools.FlickrSearchResponse;
 import plugins.nherve.flickr.tools.FlickrSearchResponse.FlickrSearchResponseIterator;
 import plugins.nherve.flickr.tools.filters.ChainedFilters;
-import plugins.nherve.flickr.tools.filters.FlickrSearchResponseFilter;
 import plugins.nherve.flickr.tools.filters.HasTagsFilter;
 import plugins.nherve.flickr.tools.filters.MinSizeFilter;
 import plugins.nherve.flickr.tools.filters.NoDuplicateAuthorFilter;
@@ -152,6 +151,11 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 	private void grabEarthGrid(String parent, int nbSquare, int nbPicPerSquare, int minDim, int preferedSurface, int maxUploadedDays) {
 		int unitLength = (int) Math.floor(Math.sqrt(FULL_SURFACE / (double) nbSquare));
 
+		File parentDir = new File(parent);
+		if (!parentDir.exists()) {
+			parentDir.mkdirs();
+		}
+		
 		File dir = getDirectoryForGrabSession(parent);
 		dir.mkdir();
 
