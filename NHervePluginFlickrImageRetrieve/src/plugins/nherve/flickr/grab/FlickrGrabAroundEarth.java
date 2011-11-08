@@ -70,13 +70,15 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 
 		String dir = null;
 		int slp = -1;
-		int nbs = -1; 
+		int nbs = -1;
 		int pps = -1;
 		int dim = -1;
 		int srf = -1;
 		int day = -1;
-		
-		if (args.length == 7) {
+		int slg = MIN_LONGITUDE;
+		int slt = MIN_LATITUDE;
+
+		if (args.length >= 7) {
 			int p = 0;
 			try {
 				dir = args[p++];
@@ -86,6 +88,12 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 				dim = Integer.parseInt(args[p++]);
 				srf = Integer.parseInt(args[p++]);
 				day = Integer.parseInt(args[p++]);
+				if (args.length >= 8) {
+					slg = Integer.parseInt(args[p++]);
+					if (args.length >= 9) {
+						slt = Integer.parseInt(args[p++]);
+					}
+				}
 			} catch (NumberFormatException e) {
 				err(e);
 				displayHelp = true;
@@ -93,10 +101,11 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 		} else {
 			displayHelp = true;
 		}
-		
+
 		if (displayHelp) {
-			err("Usage : FlickrGrabAroundEarth [grab directory] [sleep sec] [nb. squares] [nb. pics per square] [min dim] [prefered surf.] [max uploaded days]");
+			err("Usage : FlickrGrabAroundEarth [grab directory] [sleep sec] [nb. squares] [nb. pics per square] [min dim] [prefered surf.] [max uploaded days] [start longitude (optional)] [start latitude (optional)]");
 			err("e.g.  : ./grabEarth.sh ./data 0 5000 25 400 800000 120");
+			err("e.g.  : ./grabEarth.sh ./data 0 5000 25 400 800000 120 -171 54");
 			err("");
 			String allArgs = "";
 			for (String a : args) {
@@ -109,7 +118,7 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 		FlickrGrabAroundEarth grab = new FlickrGrabAroundEarth();
 		grab.init(APP_KEY, slp, false);
 
-		grab.grabEarthGrid(dir, nbs, pps, dim, srf, day);
+		grab.grabEarthGrid(dir, nbs, pps, dim, srf, day, slg, slt);
 	}
 
 	private FlickrFrontend flickr;
@@ -148,14 +157,14 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 		return true;
 	}
 
-	private void grabEarthGrid(String parent, int nbSquare, int nbPicPerSquare, int minDim, int preferedSurface, int maxUploadedDays) {
+	private void grabEarthGrid(String parent, int nbSquare, int nbPicPerSquare, int minDim, int preferedSurface, int maxUploadedDays, int slg, int slt) {
 		int unitLength = (int) Math.floor(Math.sqrt(FULL_SURFACE / (double) nbSquare));
 
 		File parentDir = new File(parent);
 		if (!parentDir.exists()) {
 			parentDir.mkdirs();
 		}
-		
+
 		File dir = getDirectoryForGrabSession(parent);
 		dir.mkdir();
 
@@ -171,8 +180,10 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 		try {
 			w = new BufferedWriter(new FileWriter(metadata));
 
-			for (int longitude = MIN_LONGITUDE; longitude < (MAX_LONGITUDE - unitLength); longitude += unitLength) {
-				for (int latitude = MIN_LATITUDE; latitude < (MAX_LATITUDE - unitLength); latitude += unitLength) {
+			int longitude = slg;
+			int latitude = slt;
+			while (longitude < (MAX_LONGITUDE - unitLength)) {
+				while (latitude < (MAX_LATITUDE - unitLength)) {
 					int bbox1 = longitude;
 					int bbox2 = latitude;
 					int bbox3 = longitude + unitLength;
@@ -197,69 +208,75 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 
 					FlickrSearchResponseIterator it = (FlickrSearchResponseIterator) pictures.iterator();
 
-					outWithTime("bbox = " + bbox1 + ", " + bbox2 + ", " + bbox3 + ", " + bbox4 + " - " + it.getTotal() + " images in the last " + maxUploadedDays + " days");
+					if (it != null) {
+						outWithTime("bbox = " + bbox1 + ", " + bbox2 + ", " + bbox3 + ", " + bbox4 + " - " + it.getTotal() + " images in the last " + maxUploadedDays + " days");
 
-					FlickrImage i = null;
+						FlickrImage i = null;
 
-					while (it.hasNext()) {
-						i = it.next();
-						File outputFile = null;
-						try {
-							IcyBufferedImage img = flickr.loadImage(i, i.getClosestSize(preferedSurface), this);
-							outputFile = new File(picdir, i.getId() + ".jpg");
+						while (it.hasNext()) {
+							i = it.next();
+							File outputFile = null;
+							try {
+								IcyBufferedImage img = flickr.loadImage(i, i.getClosestSize(preferedSurface), this);
+								outputFile = new File(picdir, i.getId() + ".jpg");
 
-							Saver.saveImage(img, outputFile, true);
-							float sz = outputFile.length();
-							String strSz = " o";
-							if (sz > 1024) {
-								sz /= 1024;
-								strSz = " Ko";
+								Saver.saveImage(img, outputFile, true);
+								float sz = outputFile.length();
+								String strSz = " o";
 								if (sz > 1024) {
 									sz /= 1024;
-									strSz = " Mo";
+									strSz = " Ko";
+									if (sz > 1024) {
+										sz /= 1024;
+										strSz = " Mo";
+									}
 								}
+
+								strSz = df.format(sz) + strSz;
+
+								w.write(outputFile.getName());
+								w.write(FIELD_SEP);
+								w.write(img.getWidth() + "x" + img.getHeight());
+								w.write(FIELD_SEP);
+								w.write(strSz);
+								w.write(FIELD_SEP);
+								w.write(i.getImageWebPageURL().toString());
+								w.write(FIELD_SEP);
+								w.write(i.getId());
+								w.write(FIELD_SEP);
+								w.write(i.getOwner());
+								w.write(FIELD_SEP);
+								w.write(i.getLicense().getName());
+								w.write(FIELD_SEP);
+								w.write(i.getTags());
+								w.write(FIELD_SEP);
+								w.write(i.getTitle());
+								w.newLine();
+								w.flush();
+
+								outWithTime("bbox = " + bbox1 + ", " + bbox2 + ", " + bbox3 + ", " + bbox4 + " - " + outputFile.getName() + " - " + strSz + " - " + img.getWidth() + "x" + img.getHeight() + " - " + i.getTitle() + " - " + i.getLicense().getName());
+							} catch (IOException e1) {
+								err(outputFile.getName() + " - " + e1.getClass().getName() + " : " + e1.getMessage());
+							} catch (FormatException e) {
+								err(outputFile.getName() + " - " + e.getClass().getName() + " : " + e.getMessage());
+							} catch (FlickrException e) {
+								err(e);
 							}
 
-							strSz = df.format(sz) + strSz;
-
-							w.write(outputFile.getName());
-							w.write(FIELD_SEP);
-							w.write(img.getWidth() + "x" + img.getHeight());
-							w.write(FIELD_SEP);
-							w.write(strSz);
-							w.write(FIELD_SEP);
-							w.write(i.getImageWebPageURL().toString());
-							w.write(FIELD_SEP);
-							w.write(i.getId());
-							w.write(FIELD_SEP);
-							w.write(i.getOwner());
-							w.write(FIELD_SEP);
-							w.write(i.getLicense().getName());
-							w.write(FIELD_SEP);
-							w.write(i.getTags());
-							w.write(FIELD_SEP);
-							w.write(i.getTitle());
-							w.newLine();
-							w.flush();
-
-							outWithTime("bbox = " + bbox1 + ", " + bbox2 + ", " + bbox3 + ", " + bbox4 + " - " + outputFile.getName() + " - " + strSz + " - " + img.getWidth() + "x" + img.getHeight() + " - " + i.getTitle() + " - " + i.getLicense().getName());
-						} catch (IOException e1) {
-							err(outputFile.getName() + " - " + e1.getClass().getName() + " : " + e1.getMessage());
-						} catch (FormatException e) {
-							err(outputFile.getName() + " - " + e.getClass().getName() + " : " + e.getMessage());
-						} catch (FlickrException e) {
-							err(e);
-						}
-
-						if (gentleSleepSeconds > 0) {
-							try {
-								Thread.sleep(1l + sleepRandom.nextInt(gentleSleepSeconds * 2000));
-							} catch (InterruptedException e) {
-								e.printStackTrace();
+							if (gentleSleepSeconds > 0) {
+								try {
+									Thread.sleep(1l + sleepRandom.nextInt(gentleSleepSeconds * 2000));
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}
 							}
 						}
 					}
+					latitude += unitLength;
 				}
+				
+				longitude += unitLength;
+				latitude = MIN_LATITUDE;
 			}
 
 		} catch (IOException e) {

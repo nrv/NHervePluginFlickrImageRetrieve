@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import plugins.nherve.flickr.tools.filters.FlickrSearchResponseFilter;
 import plugins.nherve.flickr.tools.filters.NoFilter;
+import plugins.nherve.toolbox.Algorithm;
 
 /**
  * 
@@ -128,6 +129,7 @@ public class FlickrSearchResponse implements Iterable<FlickrImage> {
 			it.init();
 			return it;
 		} catch (FlickrException e) {
+			Algorithm.err(e);
 			return null;
 		}
 	}
