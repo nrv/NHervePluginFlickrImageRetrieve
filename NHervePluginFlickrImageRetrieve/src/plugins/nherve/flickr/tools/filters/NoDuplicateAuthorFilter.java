@@ -39,13 +39,13 @@ public class NoDuplicateAuthorFilter implements FlickrSearchResponseFilter {
 
 	@Override
 	public boolean match(FlickrImage img) {
-		String a = img.getOwner();
+		String a = img.getOwner().trim().toUpperCase();
 		if (authors.contains(a)) {
+			// Algorithm.outWithTime("NoDuplicateAuthorFilter discards " + img.getId() + " (" +  img.getOwner() + " known)");
 			return false;
 		} else {
 			authors.add(a);
 			return true;
-			
 		}
 	}
 

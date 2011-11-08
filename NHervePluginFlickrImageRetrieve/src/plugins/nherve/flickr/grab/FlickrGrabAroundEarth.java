@@ -184,16 +184,17 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 			int latitude = slt;
 			while (longitude < (MAX_LONGITUDE - unitLength)) {
 				while (latitude < (MAX_LATITUDE - unitLength)) {
-					int bbox1 = longitude;
-					int bbox2 = latitude;
-					int bbox3 = longitude + unitLength;
-					int bbox4 = latitude + unitLength;
+					int[] bbox = new int[4];
+					bbox[0] = longitude;
+					bbox[1] = latitude;
+					bbox[2] = longitude + unitLength;
+					bbox[3] = latitude + unitLength;
 
 					String query = "license=1,2,5,7";
 					query += "&content_type=1";
 					query += "&min_date_upload=" + lastDays;
 					query += "&sort=interestingness-desc";
-					query += "&bbox=" + bbox1 + "," + bbox2 + "," + bbox3 + "," + bbox4;
+					query += "&bbox=" + bbox[0] + "," + bbox[1] + "," + bbox[2] + "," + bbox[3];
 					query += "&accuracy=6";
 
 					ChainedFilters filter = new ChainedFilters();
@@ -209,7 +210,17 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 					FlickrSearchResponseIterator it = (FlickrSearchResponseIterator) pictures.iterator();
 
 					if (it != null) {
-						outWithTime("bbox = " + bbox1 + ", " + bbox2 + ", " + bbox3 + ", " + bbox4 + " - " + it.getTotal() + " images in the last " + maxUploadedDays + " days");
+						String bboxstr = "";
+						for (int b = 0; b < 4; b++) {
+							if (bbox[b] < 0) {
+								bboxstr += "n";
+							} else {
+								bboxstr += "p";
+							}
+							bboxstr += Math.abs(bbox[b]);
+						}
+
+						outWithTime("bbox = " + bboxstr + " - " + it.getTotal() + " images in the last " + maxUploadedDays + " days");
 
 						FlickrImage i = null;
 
@@ -218,7 +229,7 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 							File outputFile = null;
 							try {
 								IcyBufferedImage img = flickr.loadImage(i, i.getClosestSize(preferedSurface), this);
-								outputFile = new File(picdir, i.getId() + ".jpg");
+								outputFile = new File(picdir, bboxstr + "_" + i.getId() + ".jpg");
 
 								Saver.saveImage(img, outputFile, true);
 								float sz = outputFile.length();
@@ -254,7 +265,7 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 								w.newLine();
 								w.flush();
 
-								outWithTime("bbox = " + bbox1 + ", " + bbox2 + ", " + bbox3 + ", " + bbox4 + " - " + outputFile.getName() + " - " + strSz + " - " + img.getWidth() + "x" + img.getHeight() + " - " + i.getTitle() + " - " + i.getLicense().getName());
+								outWithTime("bbox = " + bboxstr + " - " + outputFile.getName() + " - " + strSz + " - " + img.getWidth() + "x" + img.getHeight() + " - " + i.getTitle() + " - " + i.getLicense().getName());
 							} catch (IOException e1) {
 								err(outputFile.getName() + " - " + e1.getClass().getName() + " : " + e1.getMessage());
 							} catch (FormatException e) {
@@ -274,7 +285,7 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 					}
 					latitude += unitLength;
 				}
-				
+
 				longitude += unitLength;
 				latitude = MIN_LATITUDE;
 			}
@@ -293,5 +304,4 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 			}
 		}
 	}
-
 }
