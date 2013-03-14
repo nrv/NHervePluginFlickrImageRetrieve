@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Nicolas Hervé.
+ * Copyright 2011-2013 Nicolas Hervé.
  * 
  * This file is part of FlickrImageRetrieve, which is an ICY plugin.
  * 
@@ -52,9 +52,9 @@ import plugins.nherve.toolbox.plugin.SingletonPlugin;
  * @author Nicolas HERVE - n.herve@laposte.net
  */
 public class FlickrImageRetrieve extends SingletonPlugin implements ActionListener, FlickrWorkerListener, HeadlessReadyComponent {
-	private final static String VERSION = "1.3.0.0";
+	private final static String VERSION = "1.3.0.1";
 
-	public final static String COPYRIGHT_HTML = "Copyright 2011 Nicolas HERVE";
+	public final static String COPYRIGHT_HTML = "Copyright 2011-2013 Nicolas HERVE";
 	private static String HELP = "<html>" + "<p align=\"center\"><b>" + HelpWindow.getTagFullPluginName() + "</b></p>" + "<p align=\"center\"><b>" + NherveToolbox.getDevNameHtml() + "</b></p>" + "<p align=\"center\"><a href=\"http://www.herve.name/pmwiki.php/Main/FlickrImageRetrieve\">Online help is available</a></p>" + "<p align=\"center\"><b>" + COPYRIGHT_HTML + "</b></p>" + "<hr/>" + "<p>" + HelpWindow.getTagPluginName() + NherveToolbox.getLicenceHtml() + "</p>" + "<p>" + NherveToolbox.getLicenceHtmllink() + "</p>" + "</html>";
 	private final static String APP_KEY = "70331e00a63dc50a87f0a7a40e1242ad";
 	private JButton btGrabRandom;
