@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Nicolas Hervé.
+ * Copyright 2011-2013 Nicolas Herv√©.
  * 
  * This file is part of FlickrImageRetrieve, which is an ICY plugin.
  * 
@@ -27,7 +27,7 @@ import icy.gui.util.WindowPositionSaver;
 import java.awt.Dimension;
 import java.awt.Point;
 
-import plugins.nherve.flickr.tools.FlickrImage;
+import plugins.nherve.flickr.tools.PluginFlickrImage;
 import plugins.nherve.toolbox.genericgrid.GridCellCollection;
 import plugins.nherve.toolbox.genericgrid.GridPanel;
 import plugins.nherve.toolbox.plugin.HeadlessReadyComponent;
@@ -36,8 +36,8 @@ import plugins.nherve.toolbox.plugin.MyFrame;
 public class FlickrImageGrid extends IcyFrame implements IcyFrameListener {
 	private static final int THUMB_SIZE = 105;
 	private static final int THUMB_SPACING = 5;
-	private GridCellCollection<FlickrImage> images;
-	private GridPanel<FlickrImage> igp;
+	private GridCellCollection<PluginFlickrImage> images;
+	private GridPanel<PluginFlickrImage> igp;
 
 	private HeadlessReadyComponent parent;
 	
@@ -51,7 +51,7 @@ public class FlickrImageGrid extends IcyFrame implements IcyFrameListener {
 
 		addToMainDesktopPane();
 		
-		igp = new GridPanel<FlickrImage>(THUMB_SIZE, THUMB_SPACING, false, false);
+		igp = new GridPanel<PluginFlickrImage>(THUMB_SIZE, THUMB_SPACING, false, false);
 		add(igp);
 
 		igp.setCells(images);
@@ -113,11 +113,11 @@ public class FlickrImageGrid extends IcyFrame implements IcyFrameListener {
 	public void icyFrameExternalized(IcyFrameEvent e) {
 	}
 
-	public GridCellCollection<FlickrImage> getImages() {
+	public GridCellCollection<PluginFlickrImage> getImages() {
 		return images;
 	}
 
-	public void setImages(GridCellCollection<FlickrImage> images) {
+	public void setImages(GridCellCollection<PluginFlickrImage> images) {
 		this.images = images;
 	}
 

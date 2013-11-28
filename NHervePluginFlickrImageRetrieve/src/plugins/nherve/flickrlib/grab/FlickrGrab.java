@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Nicolas Hervé.
+ * Copyright 2011-2013 Nicolas Hervé.
  * 
  * This file is part of FlickrImageRetrieve, which is an ICY plugin.
  * 
@@ -17,13 +17,14 @@
  * along with FlickrImageRetrieve. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package plugins.nherve.flickr.grab;
+package plugins.nherve.flickrlib.grab;
 
 import icy.file.Saver;
 import icy.image.IcyBufferedImage;
 import icy.network.NetworkUtil;
 import icy.preferences.ApplicationPreferences;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -32,14 +33,13 @@ import java.text.DecimalFormat;
 import java.util.Random;
 
 import loci.formats.FormatException;
-import plugins.nherve.flickr.tools.FlickrException;
-import plugins.nherve.flickr.tools.FlickrFrontend;
-import plugins.nherve.flickr.tools.FlickrImage;
-import plugins.nherve.flickr.tools.FlickrProgressListener;
-import plugins.nherve.flickr.tools.FlickrSearchQuery;
-import plugins.nherve.flickr.tools.FlickrSearchResponse;
-import plugins.nherve.flickr.tools.FlickrSearchResponse.FlickrSearchResponseIterator;
-import plugins.nherve.flickr.tools.filters.MinSizeFilter;
+import name.herve.flickrlib.FlickrException;
+import name.herve.flickrlib.FlickrImage;
+import name.herve.flickrlib.FlickrProgressListener;
+import name.herve.flickrlib.FlickrSearchQuery;
+import name.herve.flickrlib.FlickrSearchResponse;
+import name.herve.flickrlib.filters.MinSizeFilter;
+import plugins.nherve.flickr.tools.PluginFlickrFrontend;
 import plugins.nherve.toolbox.Algorithm;
 
 /**
@@ -63,7 +63,7 @@ public class FlickrGrab extends Algorithm implements FlickrProgressListener {
 		grab.work("/home/nherve/Travail/Data/Flickr", "license=1,2,5,7&tag_mode=all&sort=interestingness-desc&tags=biology", 10, 400, 1000 * 800);
 	}
 
-	private FlickrFrontend flickr;
+	private PluginFlickrFrontend flickr;
 	private DecimalFormat df = new DecimalFormat("0.00");
 	private int gentleSleepSeconds;
 
@@ -81,7 +81,7 @@ public class FlickrGrab extends Algorithm implements FlickrProgressListener {
 		NetworkUtil.enableSystemProxy();
 		ApplicationPreferences.load();
 
-		flickr = new FlickrFrontend(key);
+		flickr = new PluginFlickrFrontend(key);
 		flickr.setDebug(debug);
 		setLogEnabled(debug);
 
@@ -123,6 +123,7 @@ public class FlickrGrab extends Algorithm implements FlickrProgressListener {
 		picdir.mkdir();
 
 		File metadata = new File(dir, "metadata.txt");
+		metadata.getParentFile().mkdirs();
 		BufferedWriter w = null;
 		try {
 			w = new BufferedWriter(new FileWriter(metadata));
@@ -137,10 +138,10 @@ public class FlickrGrab extends Algorithm implements FlickrProgressListener {
 			FlickrSearchResponse pictures = flickr.search(q, new MinSizeFilter(minDim));
 
 			for (FlickrImage i : pictures) {
-				IcyBufferedImage img = flickr.loadImage(i, i.getClosestSize(preferedSurface), this);
+				BufferedImage img = flickr.loadImage(i, i.getClosestSize(preferedSurface), this);
 				File outputFile = new File(picdir, i.getId() + ".jpg");
 				try {
-					Saver.saveImage(img, outputFile, true);
+					Saver.saveImage(IcyBufferedImage.createFrom(img), outputFile, true);
 					float sz = outputFile.length();
 					String strSz = " o";
 					if (sz > 1024) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Nicolas Hervé.
+ * Copyright 2011-2013 Nicolas Herv√©.
  * 
  * This file is part of FlickrImageRetrieve, which is an ICY plugin.
  * 
@@ -19,7 +19,7 @@
 
 package plugins.nherve.flickr;
 
-import plugins.nherve.flickr.tools.FlickrProgressListener;
+import name.herve.flickrlib.FlickrProgressListener;
 
 
 /**

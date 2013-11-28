@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Nicolas Hervé.
+ * Copyright 2011-2013 Nicolas Herv√©.
  * 
  * This file is part of FlickrImageRetrieve, which is an ICY plugin.
  * 
@@ -19,37 +19,38 @@
 
 package plugins.nherve.flickr;
 
+import icy.image.IcyBufferedImage;
+
 import java.awt.image.BufferedImage;
 import java.io.File;
 
-import icy.image.IcyBufferedImage;
-import plugins.nherve.flickr.tools.FlickrException;
-import plugins.nherve.flickr.tools.FlickrFrontend;
-import plugins.nherve.flickr.tools.FlickrImage;
-import plugins.nherve.toolbox.genericgrid.ThumbnailException;
+import name.herve.flickrlib.FlickrException;
+import plugins.nherve.flickr.tools.PluginFlickrFrontend;
+import plugins.nherve.flickr.tools.PluginFlickrImage;
 import plugins.nherve.toolbox.genericgrid.DefaultThumbnailProvider;
+import plugins.nherve.toolbox.genericgrid.ThumbnailException;
 
-public class FlickrThumbnailProvider extends DefaultThumbnailProvider<FlickrImage> {
+public class FlickrThumbnailProvider extends DefaultThumbnailProvider<PluginFlickrImage> {
 	
-	private FlickrFrontend front;
+	private PluginFlickrFrontend front;
 
-	public FlickrThumbnailProvider(FlickrFrontend front) {
+	public FlickrThumbnailProvider(PluginFlickrFrontend front) {
 		super();
 		this.front = front;
 		front.setProvider(this);
 	}
 
 	@Override
-	public IcyBufferedImage getThumbnail(FlickrImage cell) throws ThumbnailException {
+	public IcyBufferedImage getThumbnail(PluginFlickrImage cell) throws ThumbnailException {
 		try {
-			return front.loadImageThumbnail(cell, null);
+			return front.loadIcyImageThumbnail(cell, null);
 		} catch (FlickrException e) {
 			throw new ThumbnailException(e);
 		}
 	}
 
 	@Override
-	public boolean isAbleToProvideThumbnailFor(FlickrImage cell) {
+	public boolean isAbleToProvideThumbnailFor(PluginFlickrImage cell) {
 		return true;
 	}
 
@@ -59,9 +60,9 @@ public class FlickrThumbnailProvider extends DefaultThumbnailProvider<FlickrImag
 	}
 
 	@Override
-	public BufferedImage getFullSizeImage(FlickrImage cell) throws ThumbnailException {
+	public BufferedImage getFullSizeImage(PluginFlickrImage cell) throws ThumbnailException {
 		try {
-			return front.loadImageBiggestAvailableSize(cell, null);
+			return front.loadIcyImageBiggestAvailableSize(cell, null);
 		} catch (FlickrException e) {
 			throw new ThumbnailException(e);
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Nicolas Hervé.
+ * Copyright 2011-2013 Nicolas Hervé.
  * 
  * This file is part of FlickrImageRetrieve, which is an ICY plugin.
  * 
@@ -17,13 +17,14 @@
  * along with FlickrImageRetrieve. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package plugins.nherve.flickr.grab;
+package plugins.nherve.flickrlib.grab;
 
 import icy.file.Saver;
 import icy.image.IcyBufferedImage;
 import icy.network.NetworkUtil;
 import icy.preferences.ApplicationPreferences;
 
+import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -32,17 +33,17 @@ import java.text.DecimalFormat;
 import java.util.Random;
 
 import loci.formats.FormatException;
-import plugins.nherve.flickr.tools.FlickrException;
-import plugins.nherve.flickr.tools.FlickrFrontend;
-import plugins.nherve.flickr.tools.FlickrImage;
-import plugins.nherve.flickr.tools.FlickrProgressListener;
-import plugins.nherve.flickr.tools.FlickrSearchQuery;
-import plugins.nherve.flickr.tools.FlickrSearchResponse;
-import plugins.nherve.flickr.tools.FlickrSearchResponse.FlickrSearchResponseIterator;
-import plugins.nherve.flickr.tools.filters.ChainedFilters;
-import plugins.nherve.flickr.tools.filters.HasTagsFilter;
-import plugins.nherve.flickr.tools.filters.MinSizeFilter;
-import plugins.nherve.flickr.tools.filters.NoDuplicateAuthorFilter;
+import name.herve.flickrlib.FlickrException;
+import name.herve.flickrlib.FlickrImage;
+import name.herve.flickrlib.FlickrProgressListener;
+import name.herve.flickrlib.FlickrSearchQuery;
+import name.herve.flickrlib.FlickrSearchResponse;
+import name.herve.flickrlib.FlickrSearchResponse.FlickrSearchResponseIterator;
+import name.herve.flickrlib.filters.ChainedFilters;
+import name.herve.flickrlib.filters.HasTagsFilter;
+import name.herve.flickrlib.filters.MinSizeFilter;
+import name.herve.flickrlib.filters.NoDuplicateAuthorFilter;
+import plugins.nherve.flickr.tools.PluginFlickrFrontend;
 import plugins.nherve.toolbox.Algorithm;
 
 /**
@@ -121,7 +122,7 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 		grab.grabEarthGrid(dir, nbs, pps, dim, srf, day, slg, slt);
 	}
 
-	private FlickrFrontend flickr;
+	private PluginFlickrFrontend flickr;
 	private DecimalFormat df = new DecimalFormat("0.00");
 	private int gentleSleepSeconds;
 
@@ -139,7 +140,7 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 		NetworkUtil.enableSystemProxy();
 		ApplicationPreferences.load();
 
-		flickr = new FlickrFrontend(key);
+		flickr = new PluginFlickrFrontend(key);
 		flickr.setDebug(debug);
 		setLogEnabled(debug);
 
@@ -228,10 +229,10 @@ public class FlickrGrabAroundEarth extends Algorithm implements FlickrProgressLi
 							i = it.next();
 							File outputFile = null;
 							try {
-								IcyBufferedImage img = flickr.loadImage(i, i.getClosestSize(preferedSurface), this);
+								BufferedImage img = flickr.loadImage(i, i.getClosestSize(preferedSurface), this);
 								outputFile = new File(picdir, bboxstr + "_" + i.getId() + ".jpg");
 
-								Saver.saveImage(img, outputFile, true);
+								Saver.saveImage(IcyBufferedImage.createFrom(img), outputFile, true);
 								float sz = outputFile.length();
 								String strSz = " o";
 								if (sz > 1024) {

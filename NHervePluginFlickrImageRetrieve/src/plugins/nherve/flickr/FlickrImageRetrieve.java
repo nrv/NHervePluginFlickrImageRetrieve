@@ -40,8 +40,8 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.border.TitledBorder;
 
-import plugins.nherve.flickr.tools.FlickrFrontend;
-import plugins.nherve.flickr.tools.FlickrImage;
+import plugins.nherve.flickr.tools.PluginFlickrFrontend;
+import plugins.nherve.flickr.tools.PluginFlickrImage;
 import plugins.nherve.toolbox.NherveToolbox;
 import plugins.nherve.toolbox.plugin.HeadlessReadyComponent;
 import plugins.nherve.toolbox.plugin.HelpWindow;
@@ -70,7 +70,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 	private JProgressBar pbProgress;
 	private JCheckBox cbSingleImage;
 
-	private FlickrFrontend flickr;
+	private PluginFlickrFrontend flickr;
 	private FlickrThumbnailProvider provider;
 
 	@Override
@@ -110,7 +110,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 		}
 	}
 
-	public void display(FlickrImage img) {
+	public void display(PluginFlickrImage img) {
 		btGrabByTag.setEnabled(false);
 		btGrabRandom.setEnabled(false);
 		pbProgress.setIndeterminate(true);
@@ -136,7 +136,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 	public void fillInterface(JPanel mainPanel) {
 		setUIDisplayEnabled(true);
 
-		flickr = new FlickrFrontend(APP_KEY);
+		flickr = new PluginFlickrFrontend(APP_KEY);
 		provider = new FlickrThumbnailProvider(flickr);
 
 		// Random
@@ -301,7 +301,7 @@ public class FlickrImageRetrieve extends SingletonPlugin implements ActionListen
 				grid.setImages(w.getImages());
 				grid.startInterface(getFrame());
 
-				for (final FlickrImage i : grid.getImages()) {
+				for (final PluginFlickrImage i : grid.getImages()) {
 					i.setPlugin(this);
 					// new Thread(new Runnable() {
 					//
