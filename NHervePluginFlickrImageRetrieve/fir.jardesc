@@ -11,8 +11,10 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
+        <javaElement handleIdentifier="=NHervePluginFlickrImageRetrieve/src"/>
+        <folder path="/NHerveFlickrLib/target/classes"/>
         <file path="/NHervePluginFlickrImageRetrieve/COPYING"/>
         <file path="/NHervePluginFlickrImageRetrieve/Manifest.MF"/>
-        <javaElement handleIdentifier="=NHervePluginFlickrImageRetrieve/src"/>
+        <javaElement handleIdentifier="=NHerveFlickrLib/src\/main\/java"/>
     </selectedElements>
 </jardesc>
